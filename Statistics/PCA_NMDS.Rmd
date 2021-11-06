@@ -1,0 +1,250 @@
+---
+title: "Funciones"
+output: html_document
+---
+
+## Libraries
+
+```{r echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+library(data.table)
+library(grDevices)
+library(BiodiversityR)
+library(vegan)
+library(treemap)
+library(d3treeR)
+library(htmlwidgets)
+library(ComplexHeatmap)
+library(circlize)
+library(UpSetR)
+library(RColorBrewer)
+library(viridis)
+library(ggsci)
+library(ggvegan)
+library(ggpubr)
+```
+
+
+## PCA Ejemlo realizado con tabla de asignación taxonómica de ASVs (Tax.sum)
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+
+function(OTU.Table, Tax.Table, Tax.lvl ){
+  z <- NULL
+  y <- NULL
+  for (i in 1:length(unique(Tax.Table[colnames(OTU.Table),Tax.lvl]))) {
+    if (length(OTU.Table[,which(Tax.Table[colnames(OTU.Table),Tax.lvl]==unique(Tax.Table[colnames(OTU.Table),Tax.lvl])[i])])!=length(rownames(OTU.Table))) {
+      z <- which(Tax.Table[colnames(OTU.Table),Tax.lvl]==unique(Tax.Table[colnames(OTU.Table),Tax.lvl])[i])
+      y <- cbind(y, apply(OTU.Table[,which(Tax.Table[colnames(OTU.Table),Tax.lvl]==unique(Tax.Table[colnames(OTU.Table),Tax.lvl])[i])], 1, function(x) sum(x)))
+    } else { 
+      y <- cbind(y, OTU.Table[,which(Tax.Table[colnames(OTU.Table),Tax.lvl]==unique(Tax.Table[colnames(OTU.Table),Tax.lvl])[i])])
+    }
+  }
+  colnames(y) <- unique(Tax.Table[colnames(OTU.Table),Tax.lvl])
+  invisible((y))
+}
+
+TSiR <- Tax.sum(OTU.Table = , Tax.Table = , Tax.lvl = ) %>% as.data.frame()
+#S quieres sacar valores NA lo puedes hacer de esta forma
+names(TSiR)[] <- "NA"
+TSiR <- TSiR[,!grepl("NA", names(TSiR))]
+write.csv2(TSiR, file = )
+
+pca <- rda(TSiR, scale = TRUE)
+pca
+summary(pca)
+ordiplot(pca, type = "text")
+
+PCAsig <- PCAsignificance(pca)
+PCAsig
+ordiplot(pca, choices = c(2,3), type = "text") #Seleccion de acuerdo a las PCA más significantes
+
+pca_fort <- fortify(pca, axes = 1:2)
+pca_fort
+
+ggplot() + 
+  geom_point(data = subset(pca_fort, Score == 'sites'),
+             mapping = aes(x = PC1, y = PC2),
+             colour = "#FF6B6B",
+             alpha = 0.5) +
+  geom_segment(data = subset(pca_fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = PC1, yend = PC2),
+               arrow = arrow(length = unit(0.02, "npc"),
+                             type = "open"),
+               colour = "#297F87",
+               size = 0.5) + 
+  geom_text(data = subset(pca_fort, Score == 'species'), # crudely push label away
+            mapping = aes(label = Label, x = PC1 * 1.2, y = PC2 * 1.2)) + 
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", sized = 0.7, colour = "darkgray") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.7, colour = "darkgray") + 
+  xlab("PC1 (%)") + 
+  ylab("PC2 (%)") + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black")) + 
+  expand_limits(x = c(-2, 4), y = c(-5, 3))
+#Conviene hacerlo con el mayor nivel posible probablemente
+```
+
+## Data transformation
+Occasionally, the variables in a "raw" data set have properties that violate an assumption of a statistical procedure (e.g. normally distributed values) or which cannot be compared to other variables due to differences in scale or variability. For example, principal components analysis (PCA) *requires that variables be linearly related to one another and on roughly the same scale or will perform poorly*. Rather than abandoning an analysis due to inappropriate data structure, it may be possible to transform the variables so they satisfy the conditions in question. A transformation involves the *application of a mathematical procedure to every value of a given variable or set of variables to create a new set of values*. The new values of the transformed variables should still represent the data, but will be more amenable to analysis or comparison. 
+
+### Ecologically motivated transformations 
+These transformations are closely related to several *(dis)similarity and distance measures* and have their collective basis in ecological theory. These transformations may be applied prior to analyses such as principal components analysis (PCA) or redundancy analysis (RDA) of, for example, abundance data. These analyses use simple *Euclidean distances in their ordinations which are often not appropriate for count data*. Hence, these transformations may improve the effectiveness of many analyses in representing ecological relationships. Formulae, further explanation, and examples are available in: Legendre P, Gallagher ED (2001) Ecologically meaningful transformations for ordination of species data. Oecologia. 129(2): 271-280.
+*Hellinger:* Particularly suited to *species abundance data*, this transformation gives low weights to variables with low counts and many zeros. The transformation itself comprises dividing each value in a data matrix by its row sum, and taking the square root of the quotient.
+
+
+## PCA with Hellinger transformation values (data w/o filter)
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+TS.hel <- decostand(TSiR, method = "hellinger")
+pca.hel <- rda(TS.hel, scale = TRUE)
+pca.hel
+summary(pca.hel)
+ordiplot(pca.hel, type = "text")
+
+PCAHS <- PCAsignificance(pca.hel)
+PCAHS
+ordiplot(pca.hel, choices = c(1,2), type = "text")
+
+pca.hel.fort <- fortify(pca.hel, axes = 1:2)
+
+ggplot() + 
+  geom_point(data = subset(pca.hel.fort, Score == 'sites'),
+             mapping = aes(x = PC1, y = PC2),
+             colour = "#3E978B",
+             alpha = 0.5) +
+  geom_segment(data = subset(pca.hel.fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = PC1, yend = PC2),
+               arrow = arrow(length = unit(0.02, "npc"),
+                             type = "open"),
+               colour = "#480032",
+               size = 0.5) + 
+  geom_text(data = subset(pca.hel.fort, Score == 'species'), # crudely push label away
+            mapping = aes(label = Label, x = PC1 * 1.2, y = PC2 * 1.2)) + 
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 1, colour = "darkgray") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.7, colour = "darkgray") + 
+  xlab("PCX (%)") + 
+  ylab("PCY (%)") + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black")) + 
+  expand_limits(x = c(-2, 9), y = c(-4, 6))
+```
+
+
+## NMDS w/o filt
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+nmds1 <- metaMDS(TS.hel, autotransform = FALSE)
+summary(nmds1)
+ordiplot(nmds1, type = "text")
+autoplot(nmds1)
+
+#full control with fortified ordination output
+NMDS_fort <- fortify(nmds1)
+ggplot() +
+  geom_point(data = subset(NMDS_fort, Score == 'sites'),
+             mapping = aes(x= NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0.5) +
+  geom_segment(data = subset(NMDS_fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray", 
+               size = 0.8) +
+  geom_text(data = subset(NMDS_fort, Score == 'species'), #crudely push labels away
+            mapping = aes(label = Label, x = NMDS1 * 1.2, y = NMDS2 * 1.2)) +
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black")) +
+  expand_limits(x = c(-2, 2), y = c(-2, 3))
+```
+
+
+### Make a two panel plot to reduce complexity
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+p1 <- ggplot() +
+  geom_point(data = subset(NMDS_fort, Score == 'sites'),
+             mapping = aes(x = NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0.5) +
+  geom_segment(data = subset(NMDS_fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0,
+               alpha = 0) +
+  geom_text(data = subset(NMDS_fort, Score == 'species'),
+            mapping = aes(label = Label, x = NMDS1 * 1.2, y = NMDS2 * 1.2),
+            alpha = 0) +
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"))
+
+p2 <- ggplot() +
+  geom_point(data = subset(NMDS_fort, Score == 'sites'),
+             mapping = aes(x = NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0) +
+  geom_segment(data = subset(NMDS_fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0.8) +
+  geom_text(data = subset(NMDS_fort, Score == 'species'),
+            mapping = aes(label = Label, x = NMDS1 * 1.1, y = NMDS2 * 1.1)) + 
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"))
+
+#create a multi-panel plot with one column
+ggarrange(p1, p2, ncol = 1)
+```
+
+
+## Test for differences in mite community composition across shrub level (ejemplo web)
+Se necesita un dataframe con variable ambiental, se debe construir
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+summary(mite.env) #summary of each of the columns in this data
+adonis(mite ~ Shrub, data = mite.env) #en este caso mite viene siendo la df de comunidades (taxa) y Shrub una variable de df ambiental
+
+#then show this in the nmds plot
+p3 <- ggplot() +
+  geom_point(data = subset(fort, Score == 'sites'),
+             mapping = aes(x = NMDS1, y = NMDS2, colour = mite.env$Shrub),
+             alpha = 0.5) +
+  geom_segment(data = subset(fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0,
+               alpha = 0) +
+  geom_text(data = subset(fort, Score == 'species'),
+            mapping = aes(label = Label, x = NMDS1 * 1.1, y = NMDS2 * 1.1),
+            alpha = 0) +
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        legend.position = c(0.8, 0.2)) +
+  scale_color_discrete("Shrubs")
+
+jpeg("mite_NMDS.jpg", width = 150, height = 250, units = "mm", res = 600)
+ggarrange(p3, p2, ncol = 1)
+dev.off() #turning off the jpeg device
+```

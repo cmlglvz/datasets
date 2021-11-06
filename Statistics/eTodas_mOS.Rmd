@@ -1,0 +1,2004 @@
+---
+title: "Funciones"
+output: html_document
+---
+
+## Libraries
+```{r echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+library(data.table)
+library(grDevices)
+library(BiodiversityR)
+library(vegan)
+library(treemap)
+library(d3treeR)
+library(htmlwidgets)
+library(ComplexHeatmap)
+library(circlize)
+library(UpSetR)
+library(RColorBrewer)
+library(viridis)
+library(ggsci)
+library(ggvegan)
+library(ggpubr)
+```
+
+
+## Dataframes
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+#DF with identified ASV by DADA2
+ASVs <- read.csv("/Users/Artemis/Dropbox/R/eTodas/seqtab_nochim.csv", header = T, sep = ";", dec = '.', skip = 0)
+ASVs <- mutate(ASVs, Sample = c("C1_2017.04", "C1_2018.02", "C1_2018.04", "C2_2017.04", "C2_2018.02", "C2_2018.04", "C3_2017.04", "C3_2018.02", "C3_2018.04", "C4_2017.04", "C4_2018.02", "C4_2018.04", "F1_2017.04", "F1_2018.02", "F1_2018.04", "F2_2017.04", "F2_2018.02", "F2_2018.04", "F3_2017.04", "F3_2018.02", "F3_2018.04", "F4_2017.04", "F4_2018.02", "F4_2018.04", "H1_2017.04", "H1_2018.02", "H1_2018.04", "H2_2017.04", "H2_2018.02", "H2_2018.04", "H3_2017.04", "H3_2018.02", "H3_2018.04", "H4_2017.04", "H4_2018.02", "H4_2018.04", "P1_2018.02", "P1_2018.04", "P2_2018.02", "P3_2018.02", "P4_2018.02"), 
+               .after = "X")
+SN <- ASVs[,2]
+ASVs <- ASVs[,-c(1, 2)]
+ASVs <- apply(ASVs, 2, function(x) as.numeric(as.integer(x))) %>% as.data.frame()
+rownames(ASVs) <- SN
+write.csv2(ASVs, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/ASVs.csv") #Saving some DF necessary for downstream analysis
+
+#ASV assigned taxa from PR2 4.14 
+TXs <- read.csv("/Users/Artemis/Dropbox/R/eTodas/taxa_pr2.csv", header = T, sep = ";", dec = '.', skip = 0) %>% rename(Seq = X) %>% add_column(OTU = c(paste0("ASV_", 1:4261)), .after = "Seq")
+rownames(TXs) <- TXs[,1]
+write.csv2(TXs, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/TXs.csv")
+
+print(all(colnames(ASVs)%in%rownames(TXs))) #If TRUE you can continue
+```
+
+#ASV identification
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+#Get all the NA values from taxa assignation table
+value.na <- TXs[rowSums(is.na(TXs)) > 0,]
+#Non assigned ASVs
+#Kingdom
+KingNA <- subset(value.na,is.na(Kingdom))
+write.csv2(KingNA, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/KingNA.csv")
+KNA <- KingNA[, 1] #Sequences
+xTXs <- value.na[!(row.names(value.na) %in% all_of(KNA)), ]
+#Supergroup
+SupNA <- subset(xTXs, is.na(Supergroup))
+write.csv2(SupNA, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/SupNA.csv")
+SNA <- SupNA[, 1]
+xTXs <- xTXs[!(row.names(xTXs) %in% all_of(SNA)), ]
+DivNA <- subset(xTXs, is.na(Division))
+write.csv2(DivNA, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/DivNA.csv")
+DNA <- DivNA[, 1]
+xTXs <- xTXs[!(row.names(xTXs) %in% all_of(DNA)), ]
+ClassNA <- subset(xTXs, is.na(Class))
+write.csv2(ClassNA, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/ClassNA.csv")
+CNA <- ClassNA[, 1]
+xTXs <- xTXs[!(row.names(xTXs) %in% all_of(CNA)), ]
+OrderNA <- subset(xTXs, is.na(Order))
+write.csv2(OrderNA, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/OrderNA.csv")
+ONA <- OrderNA[, 1]
+xTXs <- xTXs[!(row.names(xTXs) %in% all_of(ONA)), ]
+FamNA <- subset(xTXs, is.na(Family))
+write.csv2(FamNA, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/FamNA.csv")
+FNA <- FamNA[, 1]
+xTXs <- xTXs[!(row.names(xTXs) %in% all_of(FNA)), ]
+GenNA <- subset(xTXs, is.na(Genus))
+write.csv2(GenNA, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/GenNA.csv")
+GNA <- GenNA[, 1]
+xTXs <- xTXs[!(row.names(xTXs) %in% all_of(GNA)), ]
+SppNA <- subset(xTXs, is.na(Species))
+```
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+#Drop non-PPE taxa, we we'll use "Division" as a staring point.
+fTXs <- TXs %>% filter(Division == "Chlorophyta" | Division == "Ochrophyta" | Division == "Cryptophyta" | Division == "Cryptophyta:nucl" | Division == "Haptophyta" | Division == "Katablepharidophyta" | Division == "Rhodophyta" | Division == "Stramenopiles_X" | Division == "Alveolata_X") #Unrefined data filtering
+write.csv2(fTXs, file = "E:/R/Proyecto_Doctorado/Press/Analisis/fTXs.csv")
+
+#If for whatever reason you want to get rid of NA assignations across all ASVs you can perform this
+value.na <- TXs[rowSums(is.na(TXs)) > 0,]
+value <- fTXs[complete.cases(fTXs), ] #You continue with this object
+print(nrow(value.na)+nrow(value)) == count(fTXs)
+
+xSN <- fTXs[, 1]
+xASVs <- select(ASVs, all_of(xSN)) #DF with selected PPE Divisions' ASV across all samples 
+print(all(colnames(xASVs)%in%rownames(fTXs))) #Just in case
+write.csv2(xASVs, file = "E:/R/Proyecto_Doctorado/Press/Analisis/xASVs.csv")
+```
+
+
+## Rarefaction
+Rarefaction is a technique to assess expected species richness. It allows the calculation of species richness for a given number of individual samples, based on the construction of rarefaction curves. The issue that occurs when sampling various species in a community is that the larger the number of individuals sampled, the more species that will be found. Rarefaction curves are created by randomly re-sampling the pool of N samples multiple times and then plotting the average number of species found in each sample (1,2, … N). “Thus rarefaction generates the expected number of species in a small collection of n individuals (or n samples) drawn at random from the large pool of N samples.”. Rarefaction curves generally grow rapidly at first, as the most common species are found, but the curves plateau as only the rarest species remain to be sampled.
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+RRMX <- sort(rowSums(ASVs))
+RRMX
+plot(RRMX)
+
+TSRrfy<- rarefy(ASVs, RRMX[1]) #rarefaction uses the smallest number of observations per sample to extrapolate the expected number if all other samples only had that number of observations
+TSRrfy #gives an "expected"rarefied" number of species (not obs) if only 41641 individuals were present per sample
+
+kols <- colorRampPalette(c("#FF0000", "#FA8072", "#DC143C", "#CD5C5C", "#FF1493", "#FFC0CB", "#C71585", "#FF69B4", "#FF4500", "#FF4500", "#FF7F50", "#FFFF00", "#BDB76B", "#FFDAB9", "#FFD700", "#F0E68C", "#FFE4B5", "#4B0082", "#8B008B", "#FF00FF", "#9370DB", "#9400D3", "#E6E6FA", "#D8BFD8", "#ADFF2F", "#7FFF00", "#00FF00", "#98FB98", "#00FA9A", "#2E8B57", "#006400", "#808000", "#556B2F", "#66CDAA", "#8FBC8B", "#008080", "#00FFFF", "#AFEEEE", "#7FFFD4", "#40E0D0", "#5F9EA0", "#4682B4", "#B0C4DE", "#87CEEB", "#00BFFF", "#1E90FF", "#4169E1", "#000080", "#2F4F4F", "#696969", "#C0C0C0"))(43)
+
+tiff("Rarecurve_ASVs.tiff", width = 12, height = 6, units = 'in', res = 600)
+par(mar=c(5.1,4.1,4.1,2.1), oma=c(0,0,0,0))
+rarecurve(x = ASVs, col = kols, lwd = 2, las = 1, label = TRUE, step = 10, cex = 0.5)
+dev.off()
+
+oASVs <- as.data.frame(rrarefy(ASVs, RRMX[1]))
+
+tiff("Rarecurve_rarefyASVs.tiff", width = 12, height = 6, units = 'in', res = 600)
+par(mar=c(5.1,4.1,4.1,2.1), oma=c(0,0,0,0))
+rarecurve(x = oASVs, col = kols, lwd = 2, las = 1, label = TRUE, step = 10, cex = 0.5)
+dev.off()
+```
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+eASVs <- as.data.frame(t(oASVs))
+eASVs <- eASVs  %>% 
+  mutate(Seq = all_of(rownames(eASVs)), .before = "C1_2017.04") 
+eASVs <- eASVs %>%
+  mutate(Cha = rowSums(eASVs[2:13]), 
+         Fla = rowSums(eASVs[14:25]), 
+         Hu = rowSums(eASVs[26:37]), 
+         Pc = rowSums(eASVs[38:42]), 
+         Total = rowSums(eASVs[2:42])
+         )
+ATs <- inner_join(eASVs, TXs, by = "Seq") %>% relocate(OTU, .after = Seq)
+eSN <- ATs[, 1]
+rownames(ATs) <- eSN
+write.csv2(ATs, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/ATs.csv")
+#eATs <- ATs %>% select(Seq, Cha, Fla, Hu, Ho, Pc, Total, Division, Class, Order, Family, Genus, Species)
+```
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+rASVs <- as.data.frame(t(rarefyASVs))
+rASVs <- rASVs  %>% 
+  mutate(Seq = rownames(rASVs), .before = "C1_2017.04")
+rASVs <- rASVs  %>% 
+  mutate(Cha = rowSums(rASVs[2:13]), 
+         Fla = rowSums(rASVs[14:25]), 
+         Hu = rowSums(rASVs[26:37]), 
+         Ho = rowSums(rASVs[38:39]), 
+         Pc = rowSums(rASVs[40:44]), 
+         Total = rowSums(rASVs[2:44])
+         )
+rATs <- inner_join(rASVs, TXs, by = "Seq") %>% relocate(OTU, .after = Seq)
+rSN <- rATs[, 2]
+rownames(rATs) <- rSN
+write.csv2(rATs, file = "C:/Users/Camilo/Dropbox/R/Presentacion/rATs.csv")
+erATs <- rATs %>% select(Seq, Cha, Fla, Hu, Ho, Pc, Total, Division, Class, Order, Family, Genus, Species)
+write.csv2(erATs, file = "C:/Users/Camilo/Dropbox/R/Presentacion/erATs.csv")
+```
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+Tax.sum <- function(OTU.Table, Tax.Table, Tax.lvl ){
+  z <- NULL
+  y <- NULL
+  for (i in 1:length(unique(Tax.Table[colnames(OTU.Table),Tax.lvl]))) {
+    if (length(OTU.Table[,which(Tax.Table[colnames(OTU.Table),Tax.lvl]==unique(Tax.Table[colnames(OTU.Table),Tax.lvl])[i])])!=length(rownames(OTU.Table))) {
+      z <- which(Tax.Table[colnames(OTU.Table),Tax.lvl]==unique(Tax.Table[colnames(OTU.Table),Tax.lvl])[i])
+      y <- cbind(y, apply(OTU.Table[,which(Tax.Table[colnames(OTU.Table),Tax.lvl]==unique(Tax.Table[colnames(OTU.Table),Tax.lvl])[i])], 1, function(x) sum(x)))
+    } else { 
+      y <- cbind(y, OTU.Table[,which(Tax.Table[colnames(OTU.Table),Tax.lvl]==unique(Tax.Table[colnames(OTU.Table),Tax.lvl])[i])])
+    }
+  }
+  colnames(y) <- unique(Tax.Table[colnames(OTU.Table),Tax.lvl])
+  invisible((y))
+}
+
+TSDiv <- Tax.sum(oASVs, TXs, 5) %>% as.data.frame()
+write.csv2(TSDiv, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/TSDiv.csv")
+TSClass <- Tax.sum(oASVs, TXs, 6) %>% as.data.frame()
+write.csv2(TSClass, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/TSClass.csv")
+TSOrder <- Tax.sum(oASVs, TXs,7) %>% as.data.frame()
+write.csv2(TSOrder, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/TSOrder.csv")
+TSFam <- Tax.sum(oASVs, TXs, 8) %>% as.data.frame()
+write.csv2(TSFam, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/TSFam.csv")
+TSGen <- Tax.sum(oASVs, TXs, 9) %>% as.data.frame()
+write.csv2(TSGen, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/TSGen.csv")
+TSSpp <- Tax.sum(oASVs, TXs, 10) %>% as.data.frame()
+write.csv2(TSSpp, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/TSSpp.csv")
+
+rTSDiv <- read.csv("/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/TSDiv.csv", header = T, sep = ";", dec = ".", skip = 0) %>% rename(S.nuc = Cryptophyta, D.nuc = Cryptophyta.nucl)
+rownames(rTSDiv) <-rTSDiv$X
+rTSDiv <- mutate(rTSDiv, Cryptophyta = rowSums(rTSDiv[c(7, 19)]), .before = Haptophyta)
+rTSDiv <- rTSDiv[, -c(1, 7, 20)]
+write.csv2(rTSDiv, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/rTSDiv.csv")
+eTSDiv <- as.data.frame(t(rTSDiv))
+write.csv2(eTSDiv, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/eTSDiv.csv")
+
+eTSDiv <- read.csv("/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/eTSDiv.csv", header = T, sep = ";", dec = ".", skip = 0)
+eTSDiv <- eTSDiv %>% 
+  mutate(Cha = rowSums(eTSDiv[2:13]), 
+         Fla = rowSums(eTSDiv[14:25]), 
+         Hu = rowSums(eTSDiv[26:37]), 
+         Pc = rowSums(eTSDiv[38:42]), 
+         Total = rowSums(eTSDiv[2:42])
+         ) %>% 
+  mutate(Color = c("#4E0066", "#0000F5", "#FF0000", "#0AFF0A", "#FFA500", "#002C3D", "#20E99F", "#FFD700", "#54478C", "#FA8072", "#00FFFF", "#FFFF00", "#FF00FF", "#0B525B", "#E9D8A6", "#8943C7", "#75EC53", "#3FB7F8", "#BB3E03", "#B0AADA", "#E9F961", "#778899", "#00609F", "#F0FFF0", "#FFDAB9", "#7FFFD4", "#B0F961", "#F5005A", "#808000", "#DCDCDC", "#AEAE6E", "#9B2226", "#FFFFF0")
+         )
+
+tiff("Treemap_Abundance_Division.tiff", width = 17, height = 15, units = 'in', res = 600)
+treemap(eTSDiv, 
+        index = "X", 
+        vSize = "Total", 
+        type = "color",
+        vColor = "Color",
+        palette = c("#4E0066", "#0000F5", "#FF0000", "#0AFF0A", "#FFA500", "#002C3D", "#20E99F", "#FFD700", "#54478C", "#FA8072", "#00FFFF", "#FFFF00", "#FF00FF", "#0B525B", "#E9D8A6", "#8943C7", "#75EC53", "#3FB7F8", "#BB3E03", "#B0AADA", "#E9F961", "#778899", "#00609F", "#F0FFF0", "#FFDAB9", "#7FFFD4", "#B0F961", "#F5005A", "#808000", "#DCDCDC", "#AEAE6E", "#9B2226", "#FFFFF0", "#3E1F47", "#FF1493", "#ADFF2F", "#FF4500", "#191970", "#B0AADA", "#E0FFFF", "#D6A218", "#94D2BD", "#638C50", "#E96E9B", "#DBD18C", "#7D8CB8", "#F0A280", "#048BA8", "#E78888", "#FFFACD"), 
+        position.legend = "none", 
+        fontsize.labels = 20,
+        fontsize.title = 30,
+        title = "Todos los sitios",
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+
+tiff("Treemap_Abundance_Division_Legend.tiff", width = 10, height = 7, units = 'in', res = 600)
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = eTSDiv[, 1], cex = 1.2, ncol = 1, fill = eTSDiv$Color, x.intersp = 0.3, xjust = 0.3, yjust = 0.5, y.intersp = 1, bty = "n", adj = 0, text.width = 0.3, pt.cex = 0.3)
+dev.off()
+
+tiff("Treemap_Abundance_Selected_Division_Chanaral.tiff", width = 17, height = 15, units = 'in', res = 600)
+treemap(eTSDiv, 
+        index = "X", 
+        vSize = "Cha", 
+        type = "color",
+        vColor = "Color",
+        position.legend = "none",
+        fontsize.labels = 20,
+        fontsize.title = 30,
+        title = "Chañaral",
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+
+tiff("Treemap_Abundance_Selected_Division_Flamenco.tiff", width = 17, height = 15, units = 'in', res = 600)
+treemap(eTSDiv, 
+        index = "X", 
+        vSize = "Fla", 
+        type = "color",
+        vColor = "Color",
+        position.legend = "none",
+        fontsize.labels = 20,
+        fontsize.title = 30,
+        title = "Flamenco",
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+
+tiff("Treemap_Abundance_Selected_Division_Huasco.tiff", width = 17, height = 15, units = 'in', res = 600)
+treemap(eTSDiv, 
+        index = "X", 
+        vSize = "Hu", 
+        type = "color",
+        vColor = "Color",
+        position.legend = "none",
+        fontsize.labels = 20,
+        fontsize.title = 30,
+        title = "Huasco",
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+
+tiff("Treemap_Abundance_Selected_Division_PuntaChoros.tiff", width = 17, height = 15, units = 'in', res = 600)
+treemap(eTSDiv, 
+        index = "X", 
+        vSize = "Pc", 
+        type = "color",
+        vColor = "Color",
+        position.legend = "none",
+        fontsize.labels = 20,
+        fontsize.title = 30,
+        title = "Punta de Choros",
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+```
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+xrASVs <- select(rarefyASVs, all_of(xSN)) 
+print(all(colnames(rASVs)%in%rownames(fTXs))) #Just in case
+write.csv2(xrASVs, file = "C:/Users/Camilo/Dropbox/R/Presentacion/xrASVs.csv")
+
+rTSDiv <- Tax.sum(rarefyASVs, TXs, 5) %>% as.data.frame()
+write.csv2(rTSDiv, file = "C:/Users/Camilo/Dropbox/R/Presentacion/rTSDiv.csv")
+
+fTSDiv <- as.data.frame(t(rTSDiv))
+fTSDiv <- fTSDiv[-11, ]
+write.csv2(fTSDiv, file = "C:/Users/Camilo/Dropbox/R/Presentacion/fTSDiv.csv")
+
+fTSDiv <- read.csv("C:/Users/Camilo/Dropbox/R/Presentacion/fTSDiv.csv", header = T, sep = ";", dec = ".", skip = 0)
+fTSDiv <- fTSDiv %>% 
+  mutate(Cha = rowSums(fTSDiv[2:13]), 
+         Fla = rowSums(fTSDiv[14:25]), 
+         Hu = rowSums(fTSDiv[26:37]), 
+         Ho = rowSums(fTSDiv[38:39]), 
+         Pc = rowSums(fTSDiv[40:44]), 
+         Total = rowSums(fTSDiv[2:44])
+         ) %>% 
+  mutate(Color = c("#4E0066", "#0000F5", "#FF0000", "#0AFF0A", "#FFA500", "#002C3D", "#20E99F", "#FFD700", "#54478C", "#FA8072", "#00FFFF", "#FFFF00", "#FF00FF", "#0B525B", "#E9D8A6", "#8943C7", "#75EC53", "#3FB7F8", "#BB3E03", "#B0AADA", "#E9F961", "#778899", "#00609F", "#F0FFF0", "#FFDAB9", "#7FFFD4", "#B0F961", "#F5005A", "#808000", "#DCDCDC", "#AEAE6E", "#9B2226", "#FFFFF0", "#3E1F47")
+         )
+
+tiff("Treemap_Rarefied_Abundance_Division.tiff", width = 17, height = 15, units = 'in', res = 600)
+treemap(fTSDiv, 
+        index = "X", 
+        vSize = "Total", 
+        type = "color",
+        vColor = "Color", 
+        position.legend = "none", 
+        title = NA,
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+
+tiff("Treemap_Rarefied_Abundance_Division_Legend.tiff", width = 10, height = 7, units = 'in', res = 600)
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = fTSDiv[, 1], cex = 1.2, ncol = 1, fill = fTSDiv$Color, x.intersp = 0.3, xjust = 0.3, yjust = 0.5, y.intersp = 1, bty = "n", adj = 0, text.width = 0.3, pt.cex = 0.3)
+dev.off()
+
+tiff("Treemap_Rarefied_Abundance_Division_Chanaral.tiff", width = 17, height = 15, units = 'in', res = 600)
+treemap(fTSDiv, 
+        index = "X", 
+        vSize = "Cha", 
+        type = "color",
+        vColor = "Color",
+        position.legend = "none", 
+        title = NA,
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+
+tiff("Treemap_Rarefied_Abundance_Division_Flamenco.tiff", width = 17, height = 15, units = 'in', res = 600)
+treemap(fTSDiv, 
+        index = "X", 
+        vSize = "Fla", 
+        type = "color",
+        vColor = "Color", 
+        position.legend = "none", 
+        title = NA,
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+
+tiff("Treemap_Rarefied_Abundance_Division_Huasco.tiff", width = 17, height = 15, units = 'in', res = 600)
+treemap(fTSDiv, 
+        index = "X", 
+        vSize = "Hu", 
+        type = "color",
+        vColor = "Color", 
+        position.legend = "none", 
+        title = NA,
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+
+tiff("Treemap_Rarefied_Abundance_Division_Hornos.tiff", width = 17, height = 15, units = 'in', res = 600)
+treemap(fTSDiv, 
+        index = "X", 
+        vSize = "Ho", 
+        type = "color",
+        vColor = "Color", 
+        position.legend = "none", 
+        title = NA,
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+
+tiff("Treemap_Rarefied_Abundance_Division_PuntaChoros.tiff", width = 17, height = 15, units = 'in', res = 600)
+treemap(fTSDiv, 
+        index = "X", 
+        vSize = "Pc", 
+        type = "color",
+        vColor = "Color", 
+        position.legend = "none", 
+        title = NA,
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+```
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+rltv.Otu.Table <- function(x){
+  x.Data.rltv <- NULL
+  for (i in 1:dim(x)[1]) {
+    x.Data.rltv <- rbind(x.Data.rltv, x[i,]/apply(x, 1, function(x) sum(x))[i])
+  }
+  rownames(x.Data.rltv) <- rownames(x)
+  invisible(x.Data.rltv)
+}
+
+rltvTSDiv <- rltv.Otu.Table(rTSDiv)
+apply(rltvTSDiv, 2, function(x) sum(x))[1:43]
+write.csv2(rltvTSDiv, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/rltvTSDiv.csv")
+rltvTSDiv <- rltvTSDiv[, -11]
+
+tiff("Relative_Abundance_Division.tiff", width = 10, height = 8, units = 'in', res = 600)
+par(mar = c(5.1,4.1,4.1,2.1), oma = c(0,0,0,0))
+barplot(t(rltvTSDiv), border = NA, ylab = "Relative Abundance", ylim = c(0,1), axes = TRUE, col = eTSDiv$Color, las = 2, cex.names = 0.8, cex.axis = 0.9)
+dev.off()
+
+tiff("Relative_Abundance_Division_Legend.tiff", width = 10, height = 7, units = 'in', res = 600)
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = colnames(rltvTSDiv), cex = 1, ncol = 1, fill = eTSDiv$Color, x.intersp = 0.1, xjust = 0.1, yjust = 0.3, y.intersp = 1, bty = "n", adj = 0, text.width = 0.1, pt.cex = 0.1)
+dev.off()
+```
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+rltvrTSDiv <- rltv.Otu.Table(rTSDiv)
+apply(rltvrTSDiv, 2, function(x) sum(x))[1:43]
+write.csv2(rltvrTSDiv, file = "C:/Users/Camilo/Dropbox/R/Presentacion/rltvrTSDiv.csv")
+rltvrTSDiv <- rltvrTSDiv[, -11]
+
+tiff("Rarefied_Relative_Abundance_Division.tiff", width = 10, height = 8, units = 'in', res = 600)
+par(mar = c(5.1,4.1,4.1,2.1), oma = c(0,0,0,0))
+barplot(t(rltvrTSDiv), border = NA, ylab = "Sample Size", ylim = c(0,1), axes = TRUE, col = fTSDiv$Color, las = 2, cex.names = 0.8, cex.axis = 0.9)
+dev.off()
+
+tiff("Rarefied_Relative_Abundance_Division_Legend.tiff", width = 10, height = 7, units = 'in', res = 600)
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = colnames(rltvrTSDiv), cex = 1, ncol = 1, fill = fTSDiv$Color, x.intersp = 0.1, xjust = 0.1, yjust = 0.3, y.intersp = 1, bty = "n", adj = 0, text.width = 0.1, pt.cex = 0.1)
+dev.off()
+```
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+dTSDiv <- eTSDiv
+dSN <- dTSDiv[, 1]
+dTSDiv <- dTSDiv[, -1]
+rownames(dTSDiv) <- dSN
+dTSDiv <- as.data.frame(t(dTSDiv))
+dTSDiv <- select(dTSDiv, Chlorophyta, Ochrophyta, Cryptophyta, Haptophyta, Katablepharidophyta, Rhodophyta, Stramenopiles_X, Alveolata_X)
+dTSDiv <- as.data.frame(t(dTSDiv))
+write.csv2(dTSDiv, file = "/Users/Artemis/Documents/Proyecto_Doctorado/Analisis/dTSDiv.csv")
+
+dTSDiv <- read.csv("/Users/Artemis/Documents/Proyecto_Doctorado/Analisis/dTSDiv.csv", header = T, sep = ";", dec = ".", skip = 0)
+tiff("Treemap_Abundance_Selected_Division.tiff", width = 17, height = 15, units = 'in', res = 600)
+treemap(dTSDiv, 
+        index = "X", 
+        vSize = "Total", 
+        type = "color",
+        vColor = "Color",
+        position.legend = "none", 
+        fontsize.labels = 20,
+        fontsize.title = 30,
+        title = "Todos los sitios",
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+
+tiff("Treemap_Abundance_Selected_Division_Legend.tiff", width = 6, height = 7, units = 'in', res = 600)
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = dTSDiv$X, cex = 1.2, ncol = 1, fill = dTSDiv$Color, x.intersp = 0.3, xjust = 0.3, yjust = 0.5, y.intersp = 1, bty = "n", adj = 0, text.width = 0.3, pt.cex = 0.3)
+dev.off()
+
+tiff("Treemap_Abundance_Selected_Division_Chanaral.tiff", width = 17, height = 15, units = 'in', res = 600)
+treemap(dTSDiv, 
+        index = "X", 
+        vSize = "Cha", 
+        type = "color",
+        vColor = "Color",
+        position.legend = "none", 
+        fontsize.labels = 20,
+        fontsize.title = 30,
+        title = "Chañaral",
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+
+tiff("Treemap_Abundance_Selected_Division_Flamenco.tiff", width = 17, height = 15, units = 'in', res = 600)
+treemap(dTSDiv, 
+        index = "X", 
+        vSize = "Fla", 
+        type = "color",
+        vColor = "Color",
+        position.legend = "none", 
+        fontsize.labels = 20,
+        fontsize.title = 30,
+        title = "Flamenco",
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+
+tiff("Treemap_Abundance_Selected_Division_Huasco.tiff", width = 17, height = 15, units = 'in', res = 600)
+treemap(dTSDiv, 
+        index = "X", 
+        vSize = "Hu", 
+        type = "color",
+        vColor = "Color",
+        position.legend = "none", 
+        fontsize.labels = 20,
+        fontsize.title = 30,
+        title = "Huasco",
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+
+tiff("Treemap_Abundance_Selected_Division_PuntaChoros.tiff", width = 17, height = 15, units = 'in', res = 600)
+treemap(dTSDiv, 
+        index = "X", 
+        vSize = "Pc", 
+        type = "color",
+        vColor = "Color",
+        position.legend = "none", 
+        fontsize.labels = 20,
+        fontsize.title = 30,
+        title = "Punta de Choros",
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+```
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+bTSDiv <- fTSDiv
+bSN <- bTSDiv[, 1]
+bTSDiv <- bTSDiv[, -1]
+rownames(bTSDiv) <- bSN
+bTSDiv <- as.data.frame(t(bTSDiv))
+bTSDiv <- select(bTSDiv, Chlorophyta, Ochrophyta, Cryptophyta, Cryptophyta.nucl, Haptophyta, Katablepharidophyta, Rhodophyta, Stramenopiles_X, Alveolata_X)
+bTSDiv <- as.data.frame(t(bTSDiv))
+write.csv2(bTSDiv, file = "C:/Users/Camilo/Dropbox/R/Presentacion/bTSDiv.csv")
+
+bTSDiv <- read.csv("C:/Users/Camilo/Dropbox/R/Presentacion/bTSDiv.csv", header = T, sep = ";", dec = ".", skip = 0)
+tiff("Treemap_Rarefied_Abundance_Selected_Division.tiff", width = 16, height = 15, units = 'in', res = 600)
+treemap(bTSDiv, 
+        index = "X", 
+        vSize = "Total", 
+        type = "color",
+        vColor = "Color",
+        position.legend = "none", 
+        title = NA,
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+
+tiff("Treemap_Rarefieed_Abundance_Selected_Division_Legend.tiff", width = 6, height = 7, units = 'in', res = 600)
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = bTSDiv$X, cex = 1.2, ncol = 1, fill = bTSDiv$Color, x.intersp = 0.3, xjust = 0.3, yjust = 0.5, y.intersp = 1, bty = "n", adj = 0, text.width = 0.3, pt.cex = 0.3)
+dev.off()
+
+tiff("Treemap_Rarefied_Abundance_Selected_Division_Chanaral.tiff", width = 16, height = 15, units = 'in', res = 600)
+treemap(bTSDiv, 
+        index = "X", 
+        vSize = "Cha", 
+        type = "color",
+        vColor = "Color",
+        position.legend = "none", 
+        title = NA,
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+
+tiff("Treemap_Rarefied_Abundance_Selected_Division_Flamenco.tiff", width = 16, height = 15, units = 'in', res = 600)
+treemap(bTSDiv, 
+        index = "X", 
+        vSize = "Fla", 
+        type = "color",
+        vColor = "Color",
+        position.legend = "none", 
+        title = NA,
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+
+tiff("Treemap_Rarefied_Abundance_Selected_Division_Huasco.tiff", width = 16, height = 15, units = 'in', res = 600)
+treemap(bTSDiv, 
+        index = "X", 
+        vSize = "Hu", 
+        type = "color",
+        vColor = "Color",
+        position.legend = "none", 
+        title = NA,
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+
+tiff("Treemap_Rarefied_Abundance_Selected_Division_Hornos.tiff", width = 16, height = 15, units = 'in', res = 600)
+treemap(bTSDiv, 
+        index = "X", 
+        vSize = "Ho", 
+        type = "color",
+        vColor = "Color",
+        position.legend = "none", 
+        title = NA,
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+
+tiff("Treemap_Rarefied_Abundance_Selected_Division_PuntaChoros.tiff", width = 16, height = 15, units = 'in', res = 600)
+treemap(bTSDiv, 
+        index = "X", 
+        vSize = "Pc", 
+        type = "color",
+        vColor = "Color",
+        position.legend = "none", 
+        title = NA,
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
+```
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+rltvdTSDiv <- select(rTSDiv, Chlorophyta, Ochrophyta, Cryptophyta, Haptophyta, Katablepharidophyta, Rhodophyta, Stramenopiles_X, Alveolata_X)
+rltvdTSDiv <- rltv.Otu.Table(rltvdTSDiv)
+apply(rltvdTSDiv, 2, function(x) sum(x))[1:43]
+write.csv2(rltvdTSDiv, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/rltv_dTSDiv.csv")
+
+tiff("Relative_Abundance_Selected_Division.tiff", width = 10, height = 8, units = 'in', res = 600)
+par(mar = c(5.1,4.1,4.1,2.1), oma = c(0,0,0,0))
+barplot(t(rltvdTSDiv), border = NA, ylab = "Relative Abundance", ylim = c(0,1), axes = TRUE, col = dTSDiv$Color, las = 2, cex.names = 0.8, cex.axis = 0.9)
+dev.off()
+
+tiff("Relative_Abundance_Selected_Division_Legend.tiff", width = 10, height = 7, units = 'in', res = 600)
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = colnames(rltvdTSDiv), cex = 1, ncol = 1, fill = dTSDiv$Color, x.intersp = 0.1, xjust = 0.1, yjust = 0.3, y.intersp = 1, bty = "n", adj = 0, text.width = 0.1, pt.cex = 0.1)
+dev.off()
+```
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+names(rTSDiv)[19] <- "Cryptophyta.nucl"
+rltvbTSDiv <- select(rTSDiv, Chlorophyta, Ochrophyta, Cryptophyta, Cryptophyta.nucl, Haptophyta, Katablepharidophyta, Rhodophyta, Stramenopiles_X, Alveolata_X)
+rltvbTSDiv <- rltv.Otu.Table(rltvbTSDiv)
+apply(rltvbTSDiv, 2, function(x) sum(x))[1:43]
+write.csv2(rltvbTSDiv, file = "C:/Users/Camilo/Dropbox/R/Presentacion/rltv_bTSDiv.csv")
+
+tiff("Rarefied_Relative_Abundance_Selected_Division.tiff", width = 10, height = 8, units = 'in', res = 600)
+par(mar = c(5.1,4.1,4.1,2.1), oma = c(0,0,0,0))
+barplot(t(rltvbTSDiv), border = NA, ylab = "Relative Abundance", ylim = c(0,1), axes = TRUE, col = bTSDiv$Color, las = 2, cex.names = 0.8, cex.axis = 0.9)
+dev.off()
+
+tiff("Rarefied_Relative_Abundance_Selected_Division_Legend.tiff", width = 10, height = 7, units = 'in', res = 600)
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = colnames(rltvbTSDiv), cex = 1, ncol = 1, fill = bTSDiv$Color, x.intersp = 0.1, xjust = 0.1, yjust = 0.3, y.intersp = 1, bty = "n", adj = 0, text.width = 0.1, pt.cex = 0.1)
+dev.off()
+```
+
+
+Fijarse que la primera columna de la tabla resultante corresponde a los valores NA del df de taxa que fueron tratados como "0" al obtener TSEj. Al realizar analisis posteriores dichos datos obtienen un valor correspondiente por lo que no se suelen considerar dentro de algunas funciones pero estadisticamente si ejercen un efecto apreciable en el análisis de los datos. Esto se puede apreciar claramente cuando vemos que la ausencia de datos dentro de una variable se debe precisamente a dicha variable, por ejemplo, podemos seguir la ASV1, ASV38, ASV45 a lo largo de las clasificaciones taxonómicas. Al igual que el resto de ASVs en la matriz, estas se pueden asignar al rino eukaryota, pero si subimos de nivel, vemos claramente que solo ASV38 y ASV45 pueden asignarse a la clasificación de supergrupo, y no así ASV1, lo cual además condiciona sus clasificaciones consecuentes. Posteriormente vemos como las 2 ASVs restantes se pueden asignar sólo hasta el nivel de división taxonómica mientras que otras ASVs se pueden asignar hasta el nivel de especie.
+
+Si fuesemos siguiendo las ASVs a lo largo de las asignaciones por niveles esto se vería claramente, además esta idea se refuerza también por el hecho que no existen (por lo menos en este set de datos) asignaciones que se produzcan despues de un valor NA, lo que a su vez nos puede hablar de la robustes de la técnica de asignación. No obstante, no podemos aseverar que la asignación producida haya sido erronea, para lo cual es necesario otro set de datos que tengan un origen similar a nuestras muestras actuales y que se hayan sometidos a procesamientos similares donde la misma secuencia de ASV1 genere la misma clasificación.
+
+Estos datos ausentes se pueden clasificar como valores "Missing not at random" (MNAR) y estadisticamente no deben ser considerados como faltantes ni atribuirles un valor "0".
+
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+# DF tidy up and management for better visualization
+TSEj <- dTSDiv
+jSN <- TSEj[, 1]
+TSEj <- TSEj[, -c(1, 45:51)]
+rownames(TSEj) <- jSN
+TSEj <- as.data.frame(t(TSEj))
+TSEj <- TSEj %>% 
+  mutate(Muestra = rownames(TSEj),
+         Sitio = as.factor(c(rep("Cha", 12), rep("Fla", 12), rep("Hu", 12), rep("Ho", 2), rep("Pc", 5))), 
+                         .before = "Chlorophyta") %>% 
+  gather(key = "Taxa", value = "Abundance", -c(1,2)
+         )
+
+ebar <- 2 # Set a number of 'empty bar'
+n0bsType <- nlevels(as.factor(TSEj$Taxa))
+plus <- data.frame(matrix(NA, ebar*nlevels(TSEj$Sitio)*n0bsType, ncol(TSEj)))
+colnames(plus) <- colnames(TSEj)
+plus$Sitio <- rep(levels(TSEj$Sitio), each = ebar*n0bsType)
+TSEj <- rbind(TSEj, plus)
+TSEj <- TSEj %>% arrange(Sitio, Muestra)
+TSEj$ID <- rep(seq(1, nrow(TSEj)/n0bsType), each = n0bsType)
+
+# Get the name and the y position of each label
+label_data <- TSEj %>% group_by(ID, Muestra) %>% summarize(tot = sum(Abundance))
+number_of_bar <- nrow(label_data) # calculate the ANGLE of the labels
+angle <-  90 - 360 * (label_data$ID-0.5) /number_of_bar # substract 0.5 to center the names with their respective bars, extreme right=1 and extreme left=0
+# calculate the alignment of labels: right or left
+label_data$hjust <- ifelse(angle < -90, 1, 0) # If I am on the left part of the plot, my labels have currently an angle < -90
+label_data$angle <- ifelse(angle < -90, angle+180, angle) # flip angle BY to make them readable
+
+# prepare a data frame for base lines
+base_data <- TSEj %>% 
+  group_by(Sitio) %>% 
+  summarize(start = min(ID), end = max(ID) - ebar) %>% 
+  rowwise() %>% 
+  mutate(title = mean(c(start, end)))
+
+# prepare a data frame for grid (scales)
+grid_data <- base_data
+grid_data$end <- grid_data$end[c(nrow(grid_data), 1:nrow(grid_data)-1)] + 1
+grid_data$start <- grid_data$start - 1
+grid_data <- grid_data[-1, ]
+
+# Make the plot
+circulo <- ggplot(TSEj) +
+  # Add the stacked bar
+  geom_bar(aes(x = as.factor(ID), y = Abundance, fill = Taxa), stat = "identity", alpha = 0.9) + 
+  scale_fill_manual(values = c("Chlorophyta" = "#4E0066", "Ochrophyta" = "#0AFF0A", "Cryptophyta" = "#002C3D", "Haptophyta" = "#20E99F", "Katablepharidophyta" = "#00FFFF", "Cryptophyta:nucl" = "#3FB7F8", "Rhodophyta" = "#778899", "Stramenopiles_X" = "#FFDAB9", "Alveolata_X" = "#7FFFD4")) +
+  ylim(-20000, max(label_data$tot, na.rm = TRUE)) + 
+  theme_minimal() + 
+  theme(
+    legend.position = "bottom",
+    legend.title = element_text(face = "bold"), 
+    axis.text = element_blank(),
+    axis.title = element_blank(), 
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-1, 4), "cm")
+  ) + 
+  coord_polar() + 
+  # Add labels on top of each bar
+  geom_text(data = label_data, aes(x = ID, y = tot+1000, label = Muestra, hjust = hjust), color = "black", fontface = "bold", alpha = 0.7, size = 4, angle = label_data$angle, inherit.aes = FALSE) + 
+  # Add base line information
+  geom_segment(data = base_data, aes(x = start, y = -800, xend = end, yend = -800), colour = "#495057", alpha = 1, size = 1, inherit.aes = FALSE) + 
+  geom_text(data = base_data, aes(x = title, y = -3500, label = Sitio), hjust = c(1, 1, 0, 0, 0), colour = "#495057", alpha = 0.6, size = 5, fontface = "bold", inherit.aes = FALSE)
+
+clegend <- get_legend(circulo)
+circulo <- circulo + theme(legend.position = "none")
+as_ggplot(clegend)
+
+#Save as png
+ggsave(circulo, file = "Division_Abundance_PPE_per-site.png", path = "/Users/Artemis/Documents/Proyecto_Doctorado/Analisis/", width = 20, height = 20, dpi = 600)
+
+```
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+TSIe <- bTSDiv
+iSN <- TSIe[, 1]
+TSIe <- TSIe[, -c(1, 45:51)]
+rownames(TSIe) <- iSN
+TSIe <- as.data.frame(t(TSIe))
+TSIe <- TSIe %>% 
+  mutate(Muestra = rownames(TSIe),
+         Sitio = as.factor(c(rep("Cha", 12), rep("Fla", 12), rep("Hu", 12), rep("Ho", 2), rep("Pc", 5))), 
+                         .before = "Chlorophyta") %>% 
+  gather(key = "Taxa", value = "Abundance", -c(1,2)
+         )
+
+ebar <- 1 # Set a number of 'empty bar'
+n0bsType <- nlevels(as.factor(TSIe$Taxa))
+plus <- data.frame(matrix(NA, ebar*nlevels(TSIe$Sitio)*n0bsType, ncol(TSIe)))
+colnames(plus) <- colnames(TSIe)
+plus$Sitio <- rep(levels(TSIe$Sitio), each = ebar*n0bsType)
+TSIe <- rbind(TSIe, plus)
+TSIe <- TSIe %>% arrange(Sitio, Muestra)
+TSIe$ID <- rep(seq(1, nrow(TSIe)/n0bsType), each = n0bsType)
+
+label_data <- TSIe %>% group_by(ID, Muestra) %>% summarize(tot = sum(Abundance))
+number_of_bar <- nrow(label_data)
+angle <-  90 - 360 * (label_data$ID-0.5) /number_of_bar
+label_data$hjust <- ifelse(angle < -90, 1, 0)
+label_data$angle <- ifelse(angle < -90, angle+180, angle)
+
+base_data <- TSIe %>% 
+  group_by(Sitio) %>% 
+  summarize(start = min(ID), end = max(ID) - ebar) %>% 
+  rowwise() %>% 
+  mutate(title = mean(c(start, end)))
+
+grid_data <- base_data
+grid_data$end <- grid_data$end[c(nrow(grid_data), 1:nrow(grid_data)-1)] + 1
+grid_data$start <- grid_data$start - 1
+grid_data <- grid_data[-1, ]
+
+# Make the plot
+esfera <- ggplot(TSIe) +
+  geom_bar(aes(x = as.factor(ID), y = Abundance, fill = Taxa), stat = "identity", alpha = 0.9) + 
+  scale_fill_manual(values = c("Chlorophyta" = "#4E0066", "Ochrophyta" = "#0AFF0A", "Cryptophyta" = "#002C3D", "Haptophyta" = "#20E99F", "Katablepharidophyta" = "#00FFFF", "Cryptophyta:nucl" = "#3FB7F8", "Rhodophyta" = "#778899", "Stramenopiles_X" = "#FFDAB9", "Alveolata_X" = "#7FFFD4")) +
+  ylim(-20000, max(label_data$tot, na.rm = TRUE)) + 
+  theme_minimal() + 
+  theme(
+    legend.position = "bottom",
+    legend.title = element_text(face = "bold"), 
+    axis.text = element_blank(),
+    axis.title = element_blank(), 
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-1, 4), "cm")
+  ) + 
+  coord_polar() + 
+  geom_text(data = label_data, aes(x = ID, y = tot+1000, label = Muestra, hjust = hjust), color = "black", fontface = "bold", alpha = 0.7, size = 4, angle = label_data$angle, inherit.aes = FALSE) + 
+  geom_segment(data = base_data, aes(x = start, y = -800, xend = end, yend = -800), colour = "#495057", alpha = 1, size = 1, inherit.aes = FALSE) + 
+  geom_text(data = base_data, aes(x = title, y = -3500, label = Sitio), hjust = c(1, 1, 0, 0, 0), colour = "#495057", alpha = 0.6, size = 5, fontface = "bold", inherit.aes = FALSE)
+
+elegend <- get_legend(esfera)
+esfera <- esfera + theme(legend.position = "none")
+as_ggplot(elegend)
+
+ggsave(esfera, file = "Rarefied_Division_Abundance_PPE_per-site.png", path = "E:/R/Proyecto_Doctorado/", width = 20, height = 20, dpi = 600)
+
+```
+
+Con este grafico podemos apreciar (a mi juicio) de forma clara lo que ocurre en las curvas de rarefacción, especialmente con las muestras: S04 (C2A17), S10 (C4A17) y S23 (F4F18). Esto es, la covertura del esfuerzo muestreal para las secuencias de ASV correspondientes a PPE
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+#What if we wanted to "see" something similar but instead of taxa Divisions with OTU present at each site
+#DO NOT REPLICATE THIS (only if necessary), YOUR PC WILL APPRECIATE IT
+CN <- TXs[, 2]
+cASVs <- ASVs #Notice we are not using standardized data for this plots
+colnames(cASVs) <- CN
+cASVs <- cASVs %>% 
+  mutate(Muestra = rownames(cASVs), 
+         Sitio = as.factor(c(rep("Cha", 12), rep("Fla", 12), rep("Hu", 12), rep("Ho", 2), rep("Pc", 5))), 
+         .before = "ASV_1") %>% 
+  gather(key = "OTU", value = "Abundance", -c(1,2))
+
+n0bsTypec <- nlevels(as.factor(cASVs$OTU))
+plusc <- data.frame(matrix(NA, ebar*nlevels(cASVs$Sitio)*n0bsTypec, ncol(cASVs)))
+colnames(plusc) <- colnames(cASVs)
+plusc$Sitio <- rep(levels(cASVs$Sitio), each = ebar*n0bsTypec)
+cASVs <- rbind(cASVs, plusc)
+cASVs <- cASVs %>% arrange(Sitio, Muestra)
+cASVs$ID <- rep(seq(1, nrow(cASVs)/n0bsTypec), each = n0bsTypec)
+
+label_datac <- cASVs %>% group_by(ID, Muestra) %>% summarize(tot = sum(Abundance))
+number_of_barc <- nrow(label_datac)
+Angle <-  90 - 360 * (label_datac$ID-0.5) /number_of_barc
+label_datac$hjust <- ifelse(Angle < -90, 1, 0)
+label_datac$Angle <- ifelse(Angle < -90, Angle+180, Angle)
+
+base_datac <- cASVs %>% 
+  group_by(Sitio) %>% 
+  summarize(Start = min(ID), End = max(ID) - ebar) %>% 
+  rowwise() %>% 
+  mutate(Title = mean(c(Start, End)))
+
+#Grid DF (not use yet)
+grid_datac <- base_datac
+grid_datac$End <- grid_datac$End[c(nrow(grid_datac), 1:nrow(grid_datac)-1)] + 1
+grid_datac$Start <- grid_datac$Start - 1
+grid_datac <- grid_datac[-1, ]
+
+cplot <- ggplot(cASVs) +
+  geom_bar(aes(x = as.factor(ID), y = Abundance, fill = OTU), stat = "identity", alpha = 0.9) + 
+  scale_fill_viridis(discrete = TRUE) +
+  ylim(-20000, max(label_datac$tot, na.rm = TRUE)) + 
+  theme_minimal() + 
+  theme(
+    legend.position = "bottom", 
+    legend.title = element_text(face = "bold"),
+    axis.text = element_blank(),
+    axis.title = element_blank(), 
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-1, 4), "cm")
+  ) + 
+  coord_polar() + 
+  geom_text(data = label_datac, aes(x = ID, y = tot+1000, label = Muestra, hjust = hjust), color = "black", fontface = "bold", alpha = 0.7, size = 4, angle = label_datac$Angle, inherit.aes = FALSE) + 
+  geom_segment(data = base_datac, aes(x = Start, y = -800, xend = End, yend = -800), colour = "#495057", alpha = 0.9, size = 0.9, inherit.aes = FALSE) + 
+  geom_text(data = base_datac, aes(x = Title, y = -3500, label = Sitio), hjust = c(1, 1, 0, 0, 0), colour = "#495057", alpha = 0.6, size = 5, fontface = "bold", inherit.aes = FALSE)
+
+clegend <- get_legend(cplot)
+cplot <- cplot + theme(legend.position = "none")
+as_ggplot(clegend)
+
+#Save as png
+ggsave(cplot, file = "ASV_Abundance_per-site.png", path = "C:/Users/Camilo/Dropbox/R/Presentacion/", width = 23, height = 20, dpi = 300)
+#It took 1h 55min aprox to render this plot
+#You have been warned
+```
+
+Esto nos da una idea visual de como se distribuyen las ASV de PPE en los sitios de interes/muestreo, no obstante, no entrega información de fácil acceso para explicar algún fenómeno de interes.
+*Nota:* Lo mejor es ordenar la asignación de "tags" para facilitar la asignación de colores. Por ejemplo, "ASV_01... ASV_n" permite realizar conjeturas asociadas al espectro de la paleta de colores utilizada.
+
+## Data preparation for UpSetR
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+wTXs <- TXs %>% filter(Division == "Chlorophyta" | Division == "Ochrophyta" | Division == "Cryptophyta" | Division == "Haptophyta" | Division == "Katablepharidophyta" | Division == "Rhodophyta")
+wSN <- wTXs[, 1] #Seq of OTUs (columns)
+wASVs <- select(oASVs, all_of(wSN)) #select seqs of OTUs of interest
+wASVs <- as.data.frame(t(wASVs))
+wASVs <- wASVs  %>% 
+  mutate(Seq = all_of(rownames(wASVs)), .before = "C1_2017.04")
+wASVs <- wASVs %>%
+  mutate(Cha = rowSums(wASVs[2:13]), 
+         Fla = rowSums(wASVs[14:25]), 
+         Hu = rowSums(wASVs[26:37]), 
+         Pc = rowSums(wASVs[38:42]), 
+         Total = rowSums(wASVs[2:42])
+         )
+wATs <- inner_join(wASVs, TXs, by = "Seq") %>% relocate(OTU, .after = Seq)
+write.csv2(wATs, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/wATs.csv")
+wSN <- wATs[, 2]
+edwATs <- wATs[, -c(2,48:56)]
+rownames(edwATs) <- wSN
+write.csv2(edwATs, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/edwATs.csv")
+wseq <- edwATs[, 1]
+#print(all(xSN%in%wseq))
+#all.equal(all_of(xSN), all_of(wseq), check.attributes = TRUE, use.names = TRUE)
+APwATs <- edwATs[, -1]
+APwATs <- decostand(APwATs, method = "pa")
+APwATs <- add_column(APwATs, Seq = all_of(wseq), .before = "C1_2017.04")
+write.csv2(APwATs, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/APwATs.csv")
+```
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+wTXsnd <- TXs
+wSNnd <- wTXsnd[, 1] #Seq of OTUs (columns)
+wASVsnd <- select(oASVs, all_of(wSNnd)) #select seqs of OTUs of interest
+wASVsnd <- as.data.frame(t(wASVsnd))
+wASVsnd <- wASVsnd  %>% 
+  mutate(Seq = all_of(rownames(wASVsnd)), .before = "C1_2017.04")
+wASVsnd <- wASVsnd %>%
+  mutate(Cha = rowSums(wASVsnd[2:13]), 
+         Fla = rowSums(wASVsnd[14:25]), 
+         Hu = rowSums(wASVsnd[26:37]), 
+         Pc = rowSums(wASVsnd[38:42]), 
+         Total = rowSums(wASVsnd[2:42])
+         )
+wATsnd <- inner_join(wASVsnd, TXs, by = "Seq") %>% relocate(OTU, .after = Seq)
+write.csv2(wATsnd, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/wATsnd.csv")
+wxSNnd <- wATsnd[, 2]
+edwATsnd <- wATsnd[, -c(2,48:56)]
+rownames(edwATsnd) <- wxSNnd
+write.csv2(edwATsnd, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/edwATsnd.csv")
+#print(all(xSN%in%wseq))
+#all.equal(all_of(xSN), all_of(wseq), check.attributes = TRUE, use.names = TRUE)
+APwATsnd <- edwATsnd[, -1]
+APwATsnd <- decostand(APwATsnd, method = "pa")
+APwATsnd <- add_column(APwATsnd, Seq = all_of(wSNnd), .before = "C1_2017.04")
+write.csv2(APwATsnd, file = "/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/APwATsnd.csv")
+```
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+yASVs <- rATs %>% filter(Division == "Chlorophyta" | Division == "Ochrophyta" | Division == "Cryptophyta" | Division == "Cryptophyta:nucl" | Division == "Haptophyta" | Division == "Katablepharidophyta" | Division == "Rhodophyta" | Division == "Stramenopiles_X" | Division == "Alveolata_X")
+yASVs <- yASVs[, -c(2, 51:59)]
+write.csv2(yASVs, file = "C:/Users/Camilo/Dropbox/R/Presentacion/zASVs.csv")
+yseq <- yASVs[,1]
+all.equal(all_of(xSN), all_of(yseq), check.attributes = TRUE, use.names = TRUE) #If TRUE you can continue
+print(all(xSN%in%yseq)) #Same as previous, if TRUE you can continue
+yASVs <- yASVs[, -1]
+yASVs <- decostand(yASVs, method = "pa")
+yASVs <- add_column(yASVs, Seq = all_of(yseq), .before = "C1_2017.04")
+print(all(xSN%in%yASVs$Seq))
+write.csv2(yASVs, file = "C:/Users/Camilo/Dropbox/R/Presentacion/yASVs.csv")
+```
+
+##UpSetR
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+APwATs <- read.csv("/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/APwATs.csv", header = TRUE, sep = ";", dec = ".", skip = 0)
+tiff("UpSetR_PPE-Filtered_ASV.tiff", width = 15, height = 9, units = 'in', res = 600)
+upset(APwATs, sets = c("Cha", "Fla", "Hu", "Pc"), 
+      keep.order = TRUE,
+      query.legend = "top",
+      queries = list(list(query = intersects, params = "Cha", color = "#F77F00", active = TRUE, query.name = "Unique Cha ASV"),
+                     list(query = intersects, params = "Fla", color = "#FCB740", active = TRUE, query.name = "Unique Fla ASV"),
+                     list(query = intersects, params = "Hu", color = "#023E8A", active = TRUE, query.name = "Unique Hu ASV"),
+                     list(query = intersects, params = "Pc", color = "#57E3FF", active = TRUE, query.name = "Unique Pc ASV"),
+                     list(query = intersects, params = list("Cha", "Fla", "Hu", "Pc"), color = "#DC2F02", active = TRUE, query.name = "Shared Sites ASV"),
+                     list(query = intersects, params = list("Cha", "Fla"), color = "#056A2F", active = TRUE, query.name = "Shared Cha-Fla ASV"), 
+                     list(query = intersects, params = list("Hu", "Pc"), color = "#16DB65", active = TRUE, query.name = "Shared Hu-Pc ASV")), 
+      point.size = 3, 
+      line.size = 1.5, 
+      text.scale = 1.6,
+      mainbar.y.label = "Sites Intersections", 
+      sets.x.label = "ASV per Site")
+dev.off()
+```
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+APwATsnd <- read.csv("/Users/Artemis/Documents/Proyecto_Doctorado/eAnalisis/APwATsnd.csv", header = TRUE, sep = ";", dec = ".", skip = 0)
+tiff("UpSetR_ASVs.tiff", width = 15, height = 9, units = 'in', res = 600)
+upset(APwATsnd, sets = c("Cha", "Fla", "Hu", "Pc"), 
+      keep.order = TRUE,
+      query.legend = "top",
+      queries = list(list(query = intersects, params = "Cha", color = "#F77F00", active = TRUE, query.name = "Unique Cha ASV"),
+                     list(query = intersects, params = "Fla", color = "#FCB740", active = TRUE, query.name = "Unique Fla ASV"),
+                     list(query = intersects, params = "Hu", color = "#023E8A", active = TRUE, query.name = "Unique Hu ASV"),
+                     list(query = intersects, params = "Pc", color = "#57E3FF", active = TRUE, query.name = "Unique Pc ASV"),
+                     list(query = intersects, params = list("Cha", "Fla", "Hu", "Pc"), color = "#DC2F02", active = TRUE, query.name = "Shared Sites ASV"),
+                     list(query = intersects, params = list("Cha", "Fla"), color = "#056A2F", active = TRUE, query.name = "Shared Cha-Fla ASV"), 
+                     list(query = intersects, params = list("Hu", "Pc"), color = "#16DB65", active = TRUE, query.name = "Shared Hu-Pc ASV")), 
+      point.size = 3, 
+      line.size = 1.5, 
+      text.scale = 1.6,
+      mainbar.y.label = "Sites Intersections", 
+      sets.x.label = "ASV per Site")
+dev.off()
+```
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+yASVs <- read.csv("C:/Users/Camilo/Dropbox/R/Presentacion/yASVs.csv", header = TRUE, sep = ";")
+tiff("UpSetR_Rarefied_PPE-filtered_ASV.tiff", width = 15, height = 9, units = 'in', res = 600)
+upset(yASVs, sets = c("Cha", "Fla", "Hu", "Ho", "Pc"), 
+      keep.order = TRUE,
+      query.legend = "top",
+      queries = list(list(query = intersects, params = "Cha", color = "#264653", active = TRUE, query.name = "Unique Cha ASV"),
+                     list(query = intersects, params = "Fla", color = "#e76f51", active = TRUE, query.name = "Unique Fla ASV"),
+                     list(query = intersects, params = "Hu", color = "#2a9d8f", active = TRUE, query.name = "Unique Hu ASV"),
+                     list(query = intersects, params = "Ho", color = "#e9c46a", active = TRUE, query.name = "Unique Ho ASV"),
+                     list(query = intersects, params = "Pc", color = "#f4a261", active = TRUE, query.name = "Unique Pc ASV"),
+                     list(query = intersects, params = list("Cha", "Fla", "Hu", "Ho", "Pc"), color = "#FF0000", active = TRUE, query.name = "Shared Sites ASV")), 
+      point.size = 3, 
+      line.size = 1.5, 
+      text.scale = 1.6,
+      mainbar.y.label = "Sites Intersections", 
+      sets.x.label = "ASV per Site")
+dev.off()
+```
+
+
+#DF preparation
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+FebASVs <- read.csv("C:/Users/Camilo/Dropbox/R/Presentacion/fASVs.csv", header = T, sep = ";", dec = '.', skip = 0)
+fSN <- FebASVs[, 1]
+FebASVs <- FebASVs[, -1]
+rownames(FebASVs) <- fSN
+FebASVs <- FebASVs %>% 
+  select(Seq, C1_2018.02, C2_2018.02, C3_2018.02, C4_2018.02, F1_2018.02, F2_2018.02, F3_2018.02, F4_2018.02, H1_2018.02, H2_2018.02, H3_2018.02, H4_2018.02, Ho1_2018.02, P1_2018.02, P2_2018.02, P3_2018.02, P4_2018.02) %>% 
+  mutate(Cha = as.integer(rowSums(FebASVs[2:5])),
+         Fla = as.integer(rowSums(FebASVs[6:9])),
+         Hu = as.integer(rowSums(FebASVs[10:13])),
+         Ho = as.integer(Ho1_2018.02),
+         Pc = as.integer(rowSums(FebASVs[15:18])),
+         .before = "C1_2018.02")
+write.csv2(FebASVs, file = "C:/Users/Camilo/Dropbox/R/Presentacion/FebASVs.csv")
+
+#Transform data into a binary DF (presence/absence)
+Feb <- FebASVs[, 1]
+FebASVs <- FebASVs[ , -1]
+tFebASVs <- decostand(FebASVs, method = "pa") #you can choose
+tFebASVs <- add_column(tFebASVs, Seq = all_of(Feb), .before = "Cha")
+write.csv2(tFebASVs, file = "C:/Users/Camilo/Dropbox/R/Presentacion/tFebASVs.csv")
+```
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+rFebASVs <- read.csv("C:/Users/Camilo/Dropbox/R/Presentacion/zASVs.csv", header = T, sep = ";", dec = '.', skip = 0)
+rfSN <- rFebASVs[, 1]
+rFebASVs <- rFebASVs[, -1]
+rownames(rFebASVs) <- rfSN
+rFebASVs <- rFebASVs %>% 
+  select(Seq, C1_2018.02, C2_2018.02, C3_2018.02, C4_2018.02, F1_2018.02, F2_2018.02, F3_2018.02, F4_2018.02, H1_2018.02, H2_2018.02, H3_2018.02, H4_2018.02, Ho1_2018.02, P1_2018.02, P2_2018.02, P3_2018.02, P4_2018.02)
+rFebASVs <- mutate(rFebASVs, 
+                   Cha = as.integer(rowSums(rFebASVs[2:5])), 
+                   Fla = as.integer(rowSums(rFebASVs[6:9])), 
+                   Hu = as.integer(rowSums(rFebASVs[10:13])), 
+                   Ho = as.integer(Ho1_2018.02), 
+                   Pc = as.integer(rowSums(rFebASVs[15:18])), 
+                   .before = "C1_2018.02"
+                   )
+write.csv2(rFebASVs, file = "C:/Users/Camilo/Dropbox/R/Presentacion/rFebASVs.csv")
+
+#Transform data into a binary DF (presence/absence)
+rFeb <- rFebASVs[, 1]
+rFebASVs <- rFebASVs[ , -1]
+uFebASVs <- decostand(rFebASVs, method = "pa") #you can choose
+uFebASVs <- add_column(uFebASVs, Seq = all_of(rFeb), .before = "Cha")
+write.csv2(uFebASVs, file = "C:/Users/Camilo/Dropbox/R/Presentacion/uFebASVs.csv")
+```
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+tFebASVs <- read.csv("C:/Users/Camilo/Dropbox/R/Presentacion/tFebASVs.csv", header = TRUE, sep = ";")
+tiff("February_UpSetR.tiff", width = 15, height = 9, units = 'in', res = 600)
+upset(tFebASVs, sets = c("Cha", "Fla", "Hu", "Ho", "Pc"), 
+      keep.order = TRUE,
+      query.legend = "top",
+      queries = list(list(query = intersects, params = "Cha", color = "#40515D", active = TRUE, query.name = "Unique Cha ASV"),
+                     list(query = intersects, params = "Fla", color = "#96E2D9", active = TRUE, query.name = "Unique Fla ASV"),
+                     list(query = intersects, params = "Hu", color = "#2EC4B6", active = TRUE, query.name = "Unique Hu ASV"),
+                     list(query = intersects, params = "Ho", color = "#FF9F1C", active = TRUE, query.name = "Unique Ho ASV"),
+                     list(query = intersects, params = "Pc", color = "#BACC0C", active = TRUE, query.name = "Unique Pc ASV"),
+                     list(query = intersects, params = list("Cha", "Fla", "Hu", "Ho", "Pc"), color = "#E71D36", active = TRUE, query.name = "Shared Sites ASV")), 
+      point.size = 3, 
+      line.size = 1.5, 
+      text.scale = 1.6,
+      mainbar.y.label = "Sites Intersections", 
+      sets.x.label = "ASV per Site")
+dev.off()
+```
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+uFebASVs <- read.csv("C:/Users/Camilo/Dropbox/R/Presentacion/uFebASVs.csv", header = TRUE, sep = ";")
+tiff("Rarefied_February_UpSetR.tiff", width = 15, height = 9, units = 'in', res = 600)
+upset(uFebASVs, sets = c("Cha", "Fla", "Hu", "Ho", "Pc"), 
+      keep.order = TRUE,
+      query.legend = "top",
+      queries = list(list(query = intersects, params = "Cha", color = "#40515D", active = TRUE, query.name = "Unique Cha ASV"),
+                     list(query = intersects, params = "Fla", color = "#96E2D9", active = TRUE, query.name = "Unique Fla ASV"),
+                     list(query = intersects, params = "Hu", color = "#2EC4B6", active = TRUE, query.name = "Unique Hu ASV"),
+                     list(query = intersects, params = "Ho", color = "#FF9F1C", active = TRUE, query.name = "Unique Ho ASV"),
+                     list(query = intersects, params = "Pc", color = "#BACC0C", active = TRUE, query.name = "Unique Pc ASV"),
+                     list(query = intersects, params = list("Cha", "Fla", "Hu", "Ho", "Pc"), color = "#E71D36", active = TRUE, query.name = "Shared Sites ASV")), 
+      point.size = 3, 
+      line.size = 1.5, 
+      text.scale = 1.6,
+      mainbar.y.label = "Sites Intersections", 
+      sets.x.label = "ASV per Site")
+dev.off()
+```
+
+
+Vemos que al analizar los datos pertenecientes a Febrero de 2018 existen más ASVs únicas en Punta de Choros (172) que en otros sitios, incluso superando el número de ASVs únicas (101) al juntar todos los periodos de muestreo. Esto se puede atribuir, a una disminución de OTUs en otros sitios o efectivamente a un aumento de estas en Punta de Choros. Debido a la naturaleza de nuestros datos y trabajos encontramos en la literatura podríamos atribuir esta diferencia a la estacionalidad, sin embargo, debemos considerar que altas concentraciones de metales pesados como el Cu y el Fe pueden inducir cambios en la respuesta de estos microoranismos respecto a factores abioticos estacionales (desacople de patrones bióticos y abióticos estacionales; Glasner et al., 2021).
+
+
+Podemos hablar de cambios en la capacidad de irritabilidad de estos microorganismos? [**Kilgour, 1987**](https://link.springer.com/chapter/10.1007/978-1-349-09692-3_13)
+
+Revisemos (tratemos) de ver cuales son las ASVs que se pueden apreciar en Febrero de 2018 que no se aprecian al considerar todas las muestras. Para esto tomaremos como referencia Punta de Choros.
+
+
+#Huasco
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+FHuTotal <- APwATsnd
+FHuTotal <- FHuTotal %>% filter(Hu == 1)
+uFHuTotal <- FHuTotal %>% filter(Cha == 0 & Fla == 0 & Pc == 0) #You can do this filtering with a condition, its better and simpler that way
+uHuTF <- uFHuTotal[, 2] #These are the 87 ASVs that are exclusively present on Pc according to the UpSetR data
+uHuTTXs <- TXs %>% filter(Seq %in% all_of(uHuTF))
+uHuTNA <- uHuTTXs[rowSums(is.na(uHuTTXs)) > 0, ]
+uHuTot <- uHuTTXs[complete.cases(uHuTTXs), ]
+print(nrow(uHuTNA)+nrow(uHuTot)) == count(uHuTTXs)
+uHuTPPE <- uHuTot %>% filter(Division == "Chlorophyta" | Division == "Ochrophyta" | Division == "Cryptophyta" | Division == "Cryptophyta:nucl" | Division == "Haptophyta" | Division == "Katablepharidophyta" | Division == "Rhodophyta" | Division == "Stramenopiles_X" | Division == "Alveolata_X")
+uHuTF <- uHuTTXs %>% filter(Division == "Chlorophyta" | Division == "Ochrophyta" | Division == "Cryptophyta" | Division == "Cryptophyta:nucl" | Division == "Haptophyta" | Division == "Katablepharidophyta" | Division == "Rhodophyta" | Division == "Stramenopiles_X" | Division == "Alveolata_X")
+#This should be the difference
+uHuTFNA <- uHuTF[rowSums(is.na(uHuTF)) > 0, ] #too crude
+HuNA <- subset(uHuTFNA,is.na(Class))
+HuNAS <- HuNA[, 1]
+NoHuNA <- uHuTFNA[!(row.names(uHuTFNA) %in% all_of(HuNAS)), ]
+HuNA <- subset(NoHuNA, is.na(Order))
+HuNAS <- HuNA[, 1]
+NoHuNA <- NoHuNA[!(row.names(NoHuNA) %in% all_of(HuNAS)), ]
+HuNA <- subset(NoHuNA, is.na(Family))
+HuNAS <- HuNA[, 1]
+NoHuNA <- NoHuNA[!(row.names(NoHuNA) %in% all_of(HuNAS)), ]
+HuNA <- subset(NoHuNA, is.na(Genus))
+HuNAS <- HuNA[, 1]
+NoHuNA <- NoHuNA[!(row.names(NoHuNA) %in% all_of(HuNAS)), ]
+HuNA <- subset(NoHuNA, is.na(Order))
+HuNAS <- HuNA[, 1]
+NoHuNA <- NoHuNA[!(row.names(NoHuNA) %in% all_of(HuNAS)), ]
+
+FHu <- APwATs
+FHu <- FHu %>% filter(Hu == 1)
+uFHu <- FHu %>% filter(Cha == 0 & Fla == 0 & Pc == 0)
+uHuF <- uFHu[, 2]
+uHuTXs <- TXs %>% filter(Seq %in% all_of(uHuF))
+uHuNA <- uHuTXs[rowSums(is.na(uHuTXs)) > 0, ]
+uHuFinal <- uHuTXs[complete.cases(uHuTXs), ]
+print(all(all_of(rownames(uHuFinal))%in%all_of(rownames(uHuTPPE)))) #If TRUE you can continue
+uHuF <- uHuFinal[, 1]
+HuASVs <- oASVs[-c(1:24, 37:41), ]
+HuASVs <- select(HuASVs, all_of(uHuF)) #DF with selected PPE Divisions' ASV across all samples, must be 152 variables
+HuTSDiv <- Tax.sum(HuASVs, TXs, 5) %>% as.data.frame()
+rltv1 <- rltv.Otu.Table(HuTSDiv)
+
+HuAC <- uHuFinal[, 2]
+HuKO <- as.data.frame(t(HuASVs))
+HuKO <- HuKO %>% mutate(Total = rowSums(HuKO), OTU = HuAC)
+
+tiff("Relative_Abundance_Huasco_Feb.tiff", width = 3, height = 10, units = 'in', res = 600)
+par(mar = c(5.1,4.1,4.1,2.1), oma = c(0,0,0,0))
+barplot(t(rltv1), border = NA, ylab = "Relative abundance", ylim = c(0,1), axes = TRUE, col = bTSDiv$Color, las = 2, cex.names = 0.8, cex.axis = 0.9)
+dev.off()
+
+tiff("Relative_Abundance_PuntaChoros_Feb_Legend.tiff", width = 6, height = 7, units = 'in', res = 600)
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = colnames(rltv1), cex = 1, ncol = 1, fill = bTSDiv$Color, x.intersp = 0.1, xjust = 0.1, yjust = 0.3, y.intersp = 1, bty = "n", adj = 0, text.width = 0.1, pt.cex = 0.1)
+dev.off()
+
+HuSN <- HufTXs[, 1] #Same as HuFilt
+print(all(HuFilt%in%HuSN))
+FHuASVs <- select(HuASVs, all_of(HuFilt))
+FHuTSDiv <- Tax.sum(FHuASVs, fTXs, 5) %>% as.data.frame()
+rltv2 <- rltv.Otu.Table(FHuTSDiv)
+
+tiff("Relative_Abundance_Unique_PuntaChoros_Feb.tiff", width = 3, height = 10, units = 'in', res = 600)
+par(mar = c(5.1,4.1,4.1,2.1), oma = c(0,0,0,0))
+barplot(t(rltv2), border = NA, ylab = "Relative Abundance", ylim = c(0,1), axes = TRUE, col = c("#20E99F", "#4E0066", "#0AFF0A", "#FFDAB9"), las = 2, cex.names = 0.8, cex.axis = 0.9)
+dev.off()
+
+tiff("Relative_Abundance_Unique_PuntaChoros_Feb_Legend.tiff", width = 6, height = 7, units = 'in', res = 600)
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = colnames(rltv2), cex = 1, ncol = 1, fill = c("#20E99F", "#4E0066", "#0AFF0A", "#FFDAB9"), x.intersp = 0.1, xjust = 0.1, yjust = 0.3, y.intersp = 1, bty = "n", adj = 0, text.width = 0.1, pt.cex = 0.1)
+dev.off()
+```
+
+
+#Punta de Choros
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+FPc <- tFebASVs
+FPc <- FPc %>% filter(Pc == 1 & Cha == 0 & Fla == 0 & Hu == 0 & Ho == 0) #You can do this filtering with a condition, its better and simpler that way
+PcFilt <- FPc[, 2] #These are the 72 sequences correspónding to the ASVs that are exclusively present on Pc according to the UpSetR data
+PcfTXs <- TXs %>% filter(Seq %in% all_of(PcFilt))
+PcASVs <- ASVs[-c(1:38, 40), ]
+PcTSDiv <- Tax.sum(PcASVs, fTXs, 5) %>% as.data.frame()
+names(PcTSDiv)[7] <- "Cryptophyta.nucl"
+PcTSDiv <- select(PcTSDiv, Chlorophyta, Ochrophyta, Cryptophyta, Cryptophyta.nucl, Haptophyta, Katablepharidophyta, Rhodophyta, Stramenopiles_X, Alveolata_X)
+rltv3 <- rltv.Otu.Table(PcTSDiv)
+
+tiff("Relative_Abundance_PuntaChoros_Feb.tiff", width = 3, height = 10, units = 'in', res = 600)
+par(mar = c(5.1,4.1,4.1,2.1), oma = c(0,0,0,0))
+barplot(t(rltv3), border = NA, ylab = "Relative abundance", ylim = c(0,1), axes = TRUE, col = bTSDiv$Color, las = 2, cex.names = 0.8, cex.axis = 0.9)
+dev.off()
+
+tiff("Relative_Abundance_PuntaChoros_Feb_Legend.tiff", width = 6, height = 7, units = 'in', res = 600)
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = colnames(rltv3), cex = 1, ncol = 1, fill = bTSDiv$Color, x.intersp = 0.1, xjust = 0.1, yjust = 0.3, y.intersp = 1, bty = "n", adj = 0, text.width = 0.1, pt.cex = 0.1)
+dev.off()
+
+FPcASVs <- select(PcASVs, all_of(PcFilt))
+FPcTSDiv <- Tax.sum(FPcASVs, fTXs, 5) %>% as.data.frame()
+names(FPcTSDiv)[3] <- "Cryptophyta.nucl"
+FPcTSDiv <- select(FPcTSDiv, Chlorophyta, Ochrophyta, Cryptophyta, Cryptophyta.nucl, Haptophyta, Rhodophyta, Stramenopiles_X)
+rltv4 <- rltv.Otu.Table(FPcTSDiv)
+
+tiff("Relative_Abundance_Unique_PuntaChoros_Feb.tiff", width = 3, height = 10, units = 'in', res = 600)
+par(mar = c(5.1,4.1,4.1,2.1), oma = c(0,0,0,0))
+barplot(t(rltv4), border = NA, ylab = "Relative Abundance", ylim = c(0,1), axes = TRUE, col = c("#4E0066", "#0AFF0A", "#002C3D", "#3FB7F8", "#00FFFF", "#778899", "#7FFFD4"), las = 2, cex.names = 0.8, cex.axis = 0.9)
+dev.off()
+
+tiff("Relative_Abundance_Unique_PuntaChoros_Feb_Legend.tiff", width = 6, height = 7, units = 'in', res = 600)
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = colnames(rltv4), cex = 1, ncol = 1, fill = c("#4E0066", "#0AFF0A", "#002C3D", "#3FB7F8", "#00FFFF", "#778899", "#7FFFD4"), x.intersp = 0.1, xjust = 0.1, yjust = 0.3, y.intersp = 1, bty = "n", adj = 0, text.width = 0.1, pt.cex = 0.1)
+dev.off()
+```
+
+#Hornos
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+FHo <- tFebASVs
+FHo <- FHo %>% filter(Ho == 1 & Cha == 0 & Fla == 0 & Hu == 0 & Pc == 0)
+HoFilt <- FHo[, 2]
+HofTXs <- TXs %>% filter(OTU %in% all_of(HoFilt))
+HoASVs <- ASVs[-c(1:36, 39:43), ]
+HoTSDiv <- Tax.sum(HoASVs, fTXs, 5) %>% as.data.frame()
+names(HoTSDiv)[7] <- "Cryptophyta.nucl"
+HoTSDiv <- select(HoTSDiv, Chlorophyta, Ochrophyta, Cryptophyta, Cryptophyta.nucl, Haptophyta, Katablepharidophyta, Rhodophyta, Stramenopiles_X, Alveolata_X)
+rltv5 <- rltv.Otu.Table(HoTSDiv)
+
+tiff("Relative_Abundance_Hornos_Feb.tiff", width = 2, height = 10, units = 'in', res = 600)
+par(mar = c(5.1,4.1,4.1,2.1), oma = c(0,0,0,0))
+barplot(t(rltv5), border = NA, ylab = "Relative abundance", ylim = c(0,1), axes = TRUE, col = bTSDiv$Color, las = 2, cex.names = 0.8, cex.axis = 0.9)
+dev.off()
+
+tiff("Relative_Abundance_Hornos_Feb_Legend.tiff", width = 6, height = 7, units = 'in', res = 600)
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = colnames(rltv3), cex = 1, ncol = 1, fill = bTSDiv$Color, x.intersp = 0.1, xjust = 0.1, yjust = 0.3, y.intersp = 1, bty = "n", adj = 0, text.width = 0.1, pt.cex = 0.1)
+dev.off()
+
+FHoASVs <- select(HoASVs, all_of(HoFilt))
+FHoTSDiv <- Tax.sum(FHoASVs, fTXs, 5) %>% as.data.frame()
+names(FHoTSDiv)[4] <- "Non.Assigned"
+FHoTSDiv <- select(FHoTSDiv, Chlorophyta, Ochrophyta, Rhodophyta, Non.Assigned)
+rltv6 <- rltv.Otu.Table(FHoTSDiv)
+
+tiff("Relative_Abundance_Unique_Hornos_Feb.tiff", width = 2, height = 10, units = 'in', res = 600)
+par(mar = c(5.1,4.1,4.1,2.1), oma = c(0,0,0,0))
+barplot(t(rltv6), border = NA, ylab = "Relative Abundance", ylim = c(0,1), axes = TRUE, col = c("#4E0066", "#0AFF0A", "#778899", "#FF0000"), las = 2, cex.names = 0.8, cex.axis = 0.9)
+dev.off()
+
+tiff("Relative_Abundance_Unique_Hornos_Feb_Legend.tiff", width = 6, height = 7, units = 'in', res = 600)
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = colnames(rltv6), cex = 1, ncol = 1, fill = c("#4E0066", "#0AFF0A", "#778899", "#FF0000"), x.intersp = 0.1, xjust = 0.1, yjust = 0.3, y.intersp = 1, bty = "n", adj = 0, text.width = 0.1, pt.cex = 0.1)
+dev.off()
+```
+
+
+###################################################
+################### HASTA ACA #####################
+###################################################
+
+#Chañaral
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+FCha <- tFebASVs
+FCha <- FCha %>% filter(Cha == 1 & Fla == 0 & Hu == 0 & Ho == 0 & Pc == 0) #You can do this filtering with a condition, its better and simpler that way
+ChaFilt <- FCha[, 2] #These are the 172 ASVs that are exclusively present on Pc according to the UpSetR data
+ChafTXs <- filter(TXs, Seq %in% all_of(ChaFilt))
+ChafTXs <- TXs %>% filter(Seq %in% all_of(ChaFilt))
+ChaASVs <- ASVs[-c(13:43), ]
+ChaASVs <- ChaASVs[-c(1, 3, 4, 6, 7, 9, 10, 12), ]
+ChaTSDiv <- Tax.sum(ChaASVs, fTXs, 5) %>% as.data.frame()
+names(ChaTSDiv)[7] <- "Cryptophyta.nucl"
+ChaTSDiv <- select(ChaTSDiv, Chlorophyta, Ochrophyta, Cryptophyta, Cryptophyta.nucl, Haptophyta, Katablepharidophyta, Rhodophyta, Stramenopiles_X, Alveolata_X)
+rltv7 <- rltv.Otu.Table(ChaTSDiv)
+
+tiff("Relative_Abundance_Chanaral_Feb.tiff", width = 2, height = 8, units = 'in', res = 600)
+par(mar = c(5.1,4.1,4.1,2.1), oma = c(0,0,0,0))
+barplot(t(rltv7), border = NA, ylab = "Relative abundance", ylim = c(0,1), axes = TRUE, col = bTSDiv$Color, las = 2, cex.names = 0.8, cex.axis = 0.9)
+dev.off()
+
+tiff("Relative_Abundance_Chanaral_Feb_Legend.tiff", width = 6, height = 7, units = 'in', res = 600)
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = colnames(rltv7), cex = 1, ncol = 1, fill = bTSDiv$Color, x.intersp = 0.1, xjust = 0.1, yjust = 0.3, y.intersp = 1, bty = "n", adj = 0, text.width = 0.1, pt.cex = 0.1)
+dev.off()
+
+FChaASVs <- select(ChaASVs, all_of(ChaFilt))
+FChaTSDiv <- Tax.sum(FChaASVs, TXs, 5) %>% as.data.frame()
+FChaTSDiv <- FChaTSDiv[, -4]
+rltv6 <- rltv.Otu.Table(FHoTSDiv)
+
+ChaSN <- ChafTXs[, 1]
+FChaASVs <- select(ChaASVs, all_of(ChaSN))
+print(all(colnames(FChaASVs)%in%rownames(ChafTXs)))
+
+FChaTSDiv <- Tax.sum(FChaASVs, ChafTXs, 5) %>% as.data.frame()
+names(FChaTSDiv)[7] <- "Cryptophyta.nucl"
+FChaTSDiv <- select(FChaTSDiv, Chlorophyta, Ochrophyta, Cryptophyta, Cryptophyta.nucl, Haptophyta, Katablepharidophyta, Rhodophyta, Stramenopiles_X, Alveolata_X)
+rltv8 <- rltv.Otu.Table(FChaTSDiv)
+
+tiff("Relative_Abundance_Unique_Chanaral_Feb.tiff", width = 3, height = 10, units = 'in', res = 600)
+par(mar = c(5.1,4.1,4.1,2.1), oma = c(0,0,0,0))
+barplot(t(rltv8), border = NA, ylab = "Relative Abundance", ylim = c(0,1), axes = TRUE, col = dTSDiv$Color, las = 2, cex.names = 0.8, cex.axis = 0.9)
+dev.off()
+
+tiff("Relative_Abundance_Unique_PuntaChoros_Feb_Legend.tiff", width = 6, height = 7, units = 'in', res = 600)
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = colnames(rltv4), cex = 1, ncol = 1, fill = c("#0AFF0A", "#4E0066", "#3FB7F8", "#20E99F", "#002C3D", "#778899", "#FFDAB9"), x.intersp = 0.1, xjust = 0.1, yjust = 0.3, y.intersp = 1, bty = "n", adj = 0, text.width = 0.1, pt.cex = 0.1)
+dev.off()
+```
+
+#Shared
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+FShrd <- tFebASVs
+FShrd <- FShrd %>% filter(Cha == 1 & Fla == 1 & Hu == 1 & Ho == 1 & Pc == 1) #You can do this filtering with a condition, its better and simpler that way
+ShrdFilt <- FShrd[, 2] #These are the 172 ASVs that are exclusively present on Pc according to the UpSetR data
+ShrdfTXs <- filter(TXs, Seq %in% all_of(ShrdFilt))
+ShrdASVs <- ASVs[-c(1, 3, 4, 6, 7, 9, 10, 12, 13, 15, 16, 18, 19, 21, 22, 24, 25, 27, 28, 30, 31, 33, 34, 36, 37, 40), ]
+ShrdTSDiv <- Tax.sum(ShrdASVs, fTXs, 5) %>% as.data.frame()
+names(ShrdTSDiv)[7] <- "Cryptophyta.nucl"
+ShrdTSDiv <- select(ShrdTSDiv, Chlorophyta, Ochrophyta, Cryptophyta, Cryptophyta.nucl, Haptophyta, Katablepharidophyta, Rhodophyta, Stramenopiles_X, Alveolata_X)
+rltv9 <- rltv.Otu.Table(ShrdTSDiv)
+
+tiff("Relative_Abundance_Shared_Feb.tiff", width = 7, height = 8, units = 'in', res = 600)
+par(mar = c(5.1,4.1,4.1,2.1), oma = c(0,0,0,0))
+barplot(t(rltv9), border = NA, ylab = "Relative abundance", ylim = c(0,1), axes = TRUE, col = bTSDiv$Color, las = 2, cex.names = 0.8, cex.axis = 0.9)
+dev.off()
+
+tiff("Relative_Abundance_Chanaral_Feb_Legend.tiff", width = 6, height = 7, units = 'in', res = 600)
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = colnames(rltv7), cex = 1, ncol = 1, fill = bTSDiv$Color, x.intersp = 0.1, xjust = 0.1, yjust = 0.3, y.intersp = 1, bty = "n", adj = 0, text.width = 0.1, pt.cex = 0.1)
+dev.off()
+
+FChaASVs <- select(ChaASVs, all_of(ChaFilt))
+FChaTSDiv <- Tax.sum(FChaASVs, ChafTXs, 5) %>% as.data.frame()
+FChaTSDiv <- FChaTSDiv[, -4]
+rltv6 <- rltv.Otu.Table(FHoTSDiv)
+
+ChaSN <- ChafTXs[, 1]
+FChaASVs <- select(ChaASVs, all_of(ChaSN))
+FChaTSDiv <- Tax.sum(ChaASVs, fTXs, 5) %>% as.data.frame()
+names(FChaTSDiv)[7] <- "Cryptophyta.nucl"
+FChaTSDiv <- select(FChaTSDiv, Chlorophyta, Ochrophyta, Cryptophyta, Cryptophyta.nucl, Haptophyta, Katablepharidophyta, Rhodophyta, Stramenopiles_X, Alveolata_X)
+rltv8 <- rltv.Otu.Table(FChaTSDiv)
+
+tiff("Relative_Abundance_Unique_Chanaral_Feb.tiff", width = 3, height = 10, units = 'in', res = 600)
+par(mar = c(5.1,4.1,4.1,2.1), oma = c(0,0,0,0))
+barplot(t(rltv8), border = NA, ylab = "Relative Abundance", ylim = c(0,1), axes = TRUE, col = dTSDiv$Color, las = 2, cex.names = 0.8, cex.axis = 0.9)
+dev.off()
+
+tiff("Relative_Abundance_Unique_PuntaChoros_Feb_Legend.tiff", width = 6, height = 7, units = 'in', res = 600)
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = colnames(rltv4), cex = 1, ncol = 1, fill = c("#0AFF0A", "#4E0066", "#3FB7F8", "#20E99F", "#002C3D", "#778899", "#FFDAB9"), x.intersp = 0.1, xjust = 0.1, yjust = 0.3, y.intersp = 1, bty = "n", adj = 0, text.width = 0.1, pt.cex = 0.1)
+dev.off()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##Let's do it but with standardized data (rarefacted)
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+rFHu <- read.csv("/Users/Artemis/Dropbox/R/Press/AP_rFASVs.csv", header = TRUE, sep = ";") %>% rename(OTU = X)
+rownames(rFHu) <- rFHu[,1]
+rFHu <- rFHu %>% filter(Hu == 1 & Cha == 0 & Fla == 0 & Ho == 0 & Pc == 0) #You can do this filtering with a condition, its better and simpler that way
+rHuFilt <- rownames(rFHu) #These are the 172 ASVs that are exclusively present on Pc according to the UpSetR data
+rHufTXs <- fTXs %>% filter(OTU %in% rHuFilt)
+rHuSN <- rHufTXs[, 1]
+rHuASVs <- select(rASVs, all_of(rHuSN)) #DF with selected PPE Divisions' ASV across all samples
+
+rHuTSDiv <- Tax.sum(rHuASVs, rHufTXs, 5) %>% as.data.frame()
+names(HuTSClass)[14] <- "Zeros"
+HuTSClass <- HuTSClass[,!grepl("Zeros", names(HuTSClass))]
+gencols <- colorRampPalette(c("#3c1642", "#086375", "#1dd3b0", "#affc41", "#b2ff9e"))(5)
+
+tiff("Feb_Unique_Hu_rASV_Abundance_Division.tiff", width = 12, height = 6, units = 'in', res = 600)
+print('CLASS DIVISION')
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = colnames(rHuTSDiv), cex = 1.1, ncol = 3, fill = gencols, x.intersp = 0.3, xjust = 0.3, yjust = 0.3, y.intersp = 0.8, bty = "n", adj = 0, text.width = 0.3, pt.cex = 0.3)
+par(mar = c(5.1,4.1,4.1,2.1), oma = c(0,0,0,0))
+barplot(t(rHuTSDiv), border = NA, xlab = "Samples", ylab = "Sample Size", ylim = c(0,100), axes = TRUE, col = gencols, las = 2, cex.names = 0.6)
+dev.off()
+
+```
+
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+HuTSDiv <- data.frame(t(HuTSDiv))
+dsHuTSDiv <- decostand(HuTSDiv, method = "chi.square", MARGIN = 1)
+dsHuTSDiv <- data.frame(t(dsHuTSDiv))
+
+tiff("decostand.tiff", width = 12, height = 6, units = 'in', res = 600)
+print('CLASS DIVISION')
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = colnames(dsHuTSDiv), cex = 1.1, ncol = 3, fill = gencols, x.intersp = 0.3, xjust = 0.3, yjust = 0.3, y.intersp = 0.8, bty = "n", adj = 0, text.width = 0.3, pt.cex = 0.3)
+par(mar = c(5.1,4.1,4.1,2.1), oma = c(0,0,0,0))
+barplot(t(dsHuTSDiv), border = NA, xlab = "Samples", ylab = "Sample Size", ylim = c(0,2), axes = TRUE, col = gencols, las = 2, cex.names = 0.6)
+dev.off()
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+FPc <- read.csv("/Users/Artemis/Dropbox/R/Press/AP_FebASVs.csv", header = TRUE, sep = ";") %>% rename(OTU = X)
+rownames(FPc) <- FPc[,1]
+FPc <- FPc %>% select(OTU, Cha, Fla, Hu, Ho, Pc) %>% filter(Pc == 1) %>% filter(Cha == 0) %>% filter(Fla == 0) %>% filter(Hu == 0) %>% filter(Ho == 0) #You can do this filtering with a condition, its better and simpler that way
+fltr <- rownames(FPc) #These are the 172 ASVs that are exclusively present on Pc according to the UpSetR data
+#Filter these ASVs from complete data and check if there are differences
+APc <- read.csv("/Users/Artemis/Dropbox/R/Press/AP_wASVs.csv", header = TRUE, sep = ";") %>% rename(OTU = X) 
+rownames(APc) <- APc[,1]
+fAPc <- subset(APc, !OTU %in% fltr) #Successfully filtered the ASVs that are exclusively present on Pc on Feb/2018
+fAPc.P <- fAPc %>% filter(Pc == 1) %>% filter(Cha == 0) %>% filter(Fla == 0) %>% filter(Hu == 0) %>% filter(Ho == 0) #From the remaining data we see that only one ASV (ASV_4000) is exclusively present at Pc in August/2018 (P1)
+fTXs <- read.csv("/Users/Artemis/Dropbox/R/Press/fTXs.csv", header = TRUE, sep = ";")
+fTXs <- fTXs[, -1]
+rownames(fTXs) <- fTXs[, 2]
+filter(fTXs, OTU == "ASV_4000") #ASV assigned to an organisms from the Florenciellales family (may be related to Pseudochattonella verruculosa, organism associated with salmon mortalities to the south of Chile)
+
+#What about the ASVs present exclusively on Pc at February/2018?
+FfTXs <- subset(fTXs, OTU %in% fltr)
+Genus <- unique(FfTXs[, 9]) #This give us a list with the different Genus identified in the previous 172 ASVs of interest (yo can set it to whichever assignation you prefer)
+
+nASVs <- read.csv("/Users/Artemis/Dropbox/R/Press/nASVs.csv", header = TRUE, sep = ";") %>% subset(X %in% fltr)
+nombre <- nASVs[, 1]
+nASVs <- nASVs[, -1]
+rownames(nASVs) <- nombre
+nASVs <- data.frame(t(nASVs))
+nTSGen <- Tax.sum(nASVs, FfTXs, 10) %>% as.data.frame()
+names(nTSGen)[4] <- "Zeros"
+nTSGen <- nTSGen[,!grepl("Zeros", names(nTSGen))]
+gencols <- viridis(79)
+
+tiff("Feb_Unique_Pc_ASV_Abundance.tiff", width = 12, height = 6, units = 'in', res = 600)
+print('CLASS GENUS')
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = colnames(nTSGen), cex = 1.1, ncol = 3, fill = gencols, x.intersp = 0.3, xjust = 0.3, yjust = 0.3, y.intersp = 0.8, bty = "n", adj = 0, text.width = 0.3, pt.cex = 0.3)
+par(mar = c(5.1,4.1,4.1,2.1), oma = c(0,0,0,0))
+barplot(t(nTSGen), border = NA, xlab = "Samples", ylab = "Sample Size", ylim = c(0,15000), axes = TRUE, col = gencols, las = 2, cex.names = 0.6)
+dev.off()
+
+```
+
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+rFPc <- read.csv("/Users/Artemis/Dropbox/R/Press/AP_rFASVs.csv", header = TRUE, sep = ";") %>% rename(OTU = X)
+rownames(rFPc) <- rFPc[,1]
+rFPc <- rFPc %>% select(OTU, Cha, Fla, Hu, Ho, Pc) %>% filter(Pc == 1) %>% filter(Cha == 0) %>% filter(Fla == 0) %>% filter(Hu == 0) %>% filter(Ho == 0) #You can do this filtering with a condition, its better and simpler that way
+rfltr <- rownames(rFPc) #These are the 172 ASVs that are exclusively present on Pc according to the UpSetR data
+#Filter these ASVs from complete data and check if there are differences
+rAPc <- read.csv("/Users/Artemis/Dropbox/R/Press/AP_yASVs.csv", header = TRUE, sep = ";") %>% rename(OTU = X) 
+rownames(rAPc) <- rAPc[,1]
+frAPc <- subset(rAPc, !OTU %in% rfltr) #Successfully filtered the ASVs that are exclusively present on Pc on Feb/2018
+frAPc.P <- frAPc %>% filter(Pc == 1) %>% filter(Cha == 0) %>% filter(Fla == 0) %>% filter(Hu == 0) %>% filter(Ho == 0) #From the remaining data we see that only one ASV (ASV_4000) is exclusively present at Pc in August/2018 (P1)
+fTXs <- read.csv("/Users/Artemis/Dropbox/R/Press/fTXs.csv", header = TRUE, sep = ";")
+fTXs <- fTXs[, -1]
+rownames(fTXs) <- fTXs[, 2]
+filter(fTXs, OTU == "ASV_4000") #ASV assigned to an organisms from the Florenciellales family (may be related to Pseudochattonella verruculosa, organism associated with salmon mortalities to the south of Chile)
+
+#What about the ASVs present exclusively on Pc at February/2018?
+FfTXs <- subset(fTXs, OTU %in% fltr)
+Genus <- unique(FfTXs[, 9]) #This give us a list with the different Genus identified in the previous 172 ASVs of interest (yo can set it to whichever assignation you prefer)
+
+nASVs <- read.csv("/Users/Artemis/Dropbox/R/Press/nASVs.csv", header = TRUE, sep = ";") %>% subset(X %in% fltr)
+nombre <- nASVs[, 1]
+nASVs <- nASVs[, -1]
+rownames(nASVs) <- nombre
+nASVs <- data.frame(t(nASVs))
+nTSGen <- Tax.sum(nASVs, FfTXs, 10) %>% as.data.frame()
+names(nTSGen)[4] <- "Zeros"
+nTSGen <- nTSGen[,!grepl("Zeros", names(nTSGen))]
+gencols <- viridis(79)
+
+tiff("Feb_Unique_Pc_ASV_Abundance.tiff", width = 12, height = 6, units = 'in', res = 600)
+print('CLASS GENUS')
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = colnames(nTSGen), cex = 1.1, ncol = 3, fill = gencols, x.intersp = 0.3, xjust = 0.3, yjust = 0.3, y.intersp = 0.8, bty = "n", adj = 0, text.width = 0.3, pt.cex = 0.3)
+par(mar = c(5.1,4.1,4.1,2.1), oma = c(0,0,0,0))
+barplot(t(nTSGen), border = NA, xlab = "Samples", ylab = "Sample Size", ylim = c(0,15000), axes = TRUE, col = gencols, las = 2, cex.names = 0.6)
+dev.off()
+
+```
+
+######################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## PCA sin filtro de muestras y secuencias
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+TSiR <- Tax.sum(ASV.Tdsi.Rltv, TX.All, 6) %>% as.data.frame()
+names(TSiR)[22] <- "NA"
+TSiR <- TSiR[,!grepl("NA", names(TSiR))]
+write.csv2(TSiR, file = "E:/R/Proyecto_Doctorado/Objetivo_1/Nuevo_Orden/Analisis/Todas/relab_taxa_all.csv")
+
+pca <- rda(TSiR, scale = TRUE)
+pca
+summary(pca)
+ordiplot(pca, type = "text")
+
+PCAsig <- PCAsignificance(pca)
+PCAsig
+ordiplot(pca, choices = c(2,3), type = "text")
+
+pca_fort <- fortify(pca, axes = 1:2)
+pca_fort
+
+ggplot() + 
+  geom_point(data = subset(pca_fort, Score == 'sites'),
+             mapping = aes(x = PC1, y = PC2),
+             colour = "#FF6B6B",
+             alpha = 0.5) +
+  geom_segment(data = subset(pca_fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = PC1, yend = PC2),
+               arrow = arrow(length = unit(0.02, "npc"),
+                             type = "open"),
+               colour = "#297F87",
+               size = 0.5) + 
+  geom_text(data = subset(pca_fort, Score == 'species'), # crudely push label away
+            mapping = aes(label = Label, x = PC1 * 1.2, y = PC2 * 1.2)) + 
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", sized = 0.7, colour = "darkgray") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.7, colour = "darkgray") + 
+  xlab("PC1 (17.78%)") + 
+  ylab("PC2 (8.42%)") + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black")) + 
+  expand_limits(x = c(-2, 4), y = c(-5, 3))
+#Conviene hacerlo con el mayor nivel posible probablemente
+```
+
+## PCA con filtro de muestras y secuencias
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+TSMPRltv <- Tax.sum(ASV.MPAll.Rltv, TX.Tds, 6) %>% as.data.frame()
+names(TSMPRltv)[21] <- "NA"
+TSMPRltv <- TSMPRltv[,!grepl("NA", names(TSMPRltv))]
+write.csv2(TSMPRltv, file = "E:/R/Proyecto_Doctorado/Objetivo_1/Nuevo_Orden/Analisis/Todas/relab_taxa_mpall.csv")
+
+pcaMP <- rda(TSMPRltv, scale = TRUE)
+pcaMP
+summary(pcaMP)
+ordiplot(pcaMP, type = "text")
+
+PCAMPSig <- PCAsignificance(pcaMP)
+PCAMPSig
+ordiplot(pcaMP, choices = c(1,2), type = "text")
+
+# To have even more control use the "fortify" function
+pcaMP_fort <- fortify(pcaMP, axes = 1:2)
+pcaMP_fort
+
+ggplot() + 
+  geom_point(data = subset(pcaMP_fort, Score == 'sites'),
+             mapping = aes(x = PC1, y = PC2),
+             colour = "#FF6B6B",
+             alpha = 0.5) +
+  geom_segment(data = subset(pcaMP_fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = PC1, yend = PC2),
+               arrow = arrow(length = unit(0.02, "npc"),
+                             type = "open"),
+               colour = "#297F87",
+               size = 0.5) + 
+  geom_text(data = subset(pcaMP_fort, Score == 'species'), # crudely push label away
+            mapping = aes(label = Label, x = PC1 * 1.2, y = PC2 * 1.2)) + 
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.7, colour = "darkgray") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.7, colour = "darkgray") + 
+  xlab("PC1 (11.77%)") + 
+  ylab("PC2 (10.13%)") + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black")) + 
+  expand_limits(x = c(-2, 5), y = c(-3, 5))
+```
+
+
+## Data transformation
+Occasionally, the variables in a "raw" data set have properties that violate an assumption of a statistical procedure (e.g. normally distributed values) or which cannot be compared to other variables due to differences in scale or variability. For example, principal components analysis (PCA) *requires that variables be linearly related to one another and on roughly the same scale or will perform poorly*. Rather than abandoning an analysis due to inappropriate data structure, it may be possible to transform the variables so they satisfy the conditions in question. A transformation involves the *application of a mathematical procedure to every value of a given variable or set of variables to create a new set of values*. The new values of the transformed variables should still represent the data, but will be more amenable to analysis or comparison. 
+
+### Ecologically motivated transformations 
+These transformations are closely related to several *(dis)similarity and distance measures* and have their collective basis in ecological theory. These transformations may be applied prior to analyses such as principal components analysis (PCA) or redundancy analysis (RDA) of, for example, abundance data. These analyses use simple *Euclidean distances in their ordinations which are often not appropriate for count data*. Hence, these transformations may improve the effectiveness of many analyses in representing ecological relationships. Formulae, further explanation, and examples are available in: Legendre P, Gallagher ED (2001) Ecologically meaningful transformations for ordination of species data. Oecologia. 129(2): 271-280.
+*Hellinger:* Particularly suited to *species abundance data*, this transformation gives low weights to variables with low counts and many zeros. The transformation itself comprises dividing each value in a data matrix by its row sum, and taking the square root of the quotient.
+
+
+## PCA with Hellinger transformation values (data w/o filter)
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+TS.hel <- decostand(TSiR, method = "hellinger")
+pca.hel <- rda(TS.hel, scale = TRUE)
+pca.hel
+summary(pca.hel)
+ordiplot(pca.hel, type = "text")
+
+PCAHS <- PCAsignificance(pca.hel)
+PCAHS
+ordiplot(pca.hel, choices = c(1,2), type = "text") #Quizás es notable que los PCA se mantuvieron, pero la ordenacion de los datos en si cambio
+
+pca.hel.fort <- fortify(pca.hel, axes = 1:2)
+
+ggplot() + 
+  geom_point(data = subset(pca.hel.fort, Score == 'sites'),
+             mapping = aes(x = PC1, y = PC2),
+             colour = "#3E978B",
+             alpha = 0.5) +
+  geom_segment(data = subset(pca.hel.fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = PC1, yend = PC2),
+               arrow = arrow(length = unit(0.02, "npc"),
+                             type = "open"),
+               colour = "#480032",
+               size = 0.5) + 
+  geom_text(data = subset(pca.hel.fort, Score == 'species'), # crudely push label away
+            mapping = aes(label = Label, x = PC1 * 1.2, y = PC2 * 1.2)) + 
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 1, colour = "darkgray") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.7, colour = "darkgray") + 
+  xlab("PC1 (16.65%)") + 
+  ylab("PC2 (9.36%)") + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black")) + 
+  expand_limits(x = c(-2, 9), y = c(-4, 6))
+```
+
+
+## PCA with Hellinger transformation values (data w filter)
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+TSMPR.hel <- decostand(TSMPRltv, method = "hellinger")
+pcaMP.hel <- rda(TSMPR.hel, scale = TRUE)
+pcaMP.hel
+summary(pcaMP.hel)
+ordiplot(pcaMP.hel, type = "text")
+
+PCAMPR.HS <- PCAsignificance(pcaMP.hel) 
+PCAMPR.HS
+ordiplot(pcaMP.hel, choices = c(1,2), type = "text")
+
+PCAMPRH.fort <- fortify(pcaMP.hel, axes = 1:2)
+ggplot() + 
+  geom_point(data = subset(PCAMPRH.fort, Score == 'sites'),
+             mapping = aes(x = PC1, y = PC2),
+             colour = "#FF0000",
+             alpha = 0.5) +
+  geom_segment(data = subset(PCAMPRH.fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = PC1, yend = PC2),
+               arrow = arrow(length = unit(0.02, "npc"),
+                             type = "open"),
+               colour = "#480032",
+               size = 0.5) + 
+  geom_text(data = subset(PCAMPRH.fort, Score == 'species'), # crudely push label away
+            mapping = aes(label = Label, x = PC1 * 1.2, y = PC2 * 1.2)) + 
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 1, colour = "darkgray") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.7, colour = "darkgray") + 
+  xlab("PC1 (13.84%)") + 
+  ylab("PC2 (12.12%)") + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black")) + 
+  expand_limits(x = c(-4, 5), y = c(-4, 5))
+```
+
+
+## NMDS w/o filt
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+nmds1 <- metaMDS(TS.hel, autotransform = FALSE)
+summary(nmds1)
+ordiplot(nmds1, type = "text")
+autoplot(nmds1)
+
+#full control with fortified ordination output
+NMDS_fort <- fortify(nmds1)
+ggplot() +
+  geom_point(data = subset(NMDS_fort, Score == 'sites'),
+             mapping = aes(x= NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0.5) +
+  geom_segment(data = subset(NMDS_fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray", 
+               size = 0.8) +
+  geom_text(data = subset(NMDS_fort, Score == 'species'), #crudely push labels away
+            mapping = aes(label = Label, x = NMDS1 * 1.2, y = NMDS2 * 1.2)) +
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black")) +
+  expand_limits(x = c(-2, 2), y = c(-2, 3))
+```
+
+
+### Make a two panel plot to reduce complexity
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+p1 <- ggplot() +
+  geom_point(data = subset(NMDS_fort, Score == 'sites'),
+             mapping = aes(x = NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0.5) +
+  geom_segment(data = subset(NMDS_fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0,
+               alpha = 0) +
+  geom_text(data = subset(NMDS_fort, Score == 'species'),
+            mapping = aes(label = Label, x = NMDS1 * 1.2, y = NMDS2 * 1.2),
+            alpha = 0) +
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"))
+
+p2 <- ggplot() +
+  geom_point(data = subset(NMDS_fort, Score == 'sites'),
+             mapping = aes(x = NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0) +
+  geom_segment(data = subset(NMDS_fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0.8) +
+  geom_text(data = subset(NMDS_fort, Score == 'species'),
+            mapping = aes(label = Label, x = NMDS1 * 1.1, y = NMDS2 * 1.1)) + 
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"))
+
+#create a multi-panel plot with one column
+ggarrange(p1, p2, ncol = 1)
+```
+
+
+## NMDS w filt
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+nmds.mpr <- metaMDS(TSMPR.hel, autotransform = FALSE)
+summary(nmds.mpr)
+ordiplot(nmds.mpr, type = "text")
+autoplot(nmds.mpr)
+
+#full control with fortified ordination output
+NMDS.MPRfort <- fortify(nmds.mpr)
+ggplot() +
+  geom_point(data = subset(NMDS.MPRfort, Score == 'sites'),
+             mapping = aes(x= NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0.5) +
+  geom_segment(data = subset(NMDS.MPRfort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray", 
+               size = 0.8) +
+  geom_text(data = subset(NMDS.MPRfort, Score == 'species'), #crudely push labels away
+            mapping = aes(label = Label, x = NMDS1 * 1.2, y = NMDS2 * 1.2)) +
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black")) +
+  expand_limits(x = c(-2, 1), y = c(-2, 1))
+```
+
+
+### Two panel plot NMDS filt data transformed
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+MPRH1 <- ggplot() +
+  geom_point(data = subset(NMDS.MPRfort, Score == 'sites'),
+             mapping = aes(x = NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0.5) +
+  geom_segment(data = subset(NMDS.MPRfort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0,
+               alpha = 0) +
+  geom_text(data = subset(NMDS.MPRfort, Score == 'species'),
+            mapping = aes(label = Label, x = NMDS1 * 1.2, y = NMDS2 * 1.2),
+            alpha = 0) +
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"))
+
+MPRH2 <- ggplot() +
+  geom_point(data = subset(NMDS.MPRfort, Score == 'sites'),
+             mapping = aes(x = NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0) +
+  geom_segment(data = subset(NMDS.MPRfort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0.8) +
+  geom_text(data = subset(NMDS.MPRfort, Score == 'species'),
+            mapping = aes(label = Label, x = NMDS1 * 1.1, y = NMDS2 * 1.1)) + 
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"))
+
+#create a multi-panel plot with one column
+ggarrange(MPRH1, MPRH2, ncol = 1)
+```
+
+
+########################################################## HASTA ACA REVISADO 22-08-2021 1:17 AM #####################################################################
+
+## Test for differences in mite community composition across shrub level
+Se necesita un dataframe con variable ambiental, se debe construir
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+summary(mite.env) #summary of each of the columns in this data
+adonis(mite ~ Shrub, data = mite.env)
+
+#then show this in the nmds plot
+p3 <- ggplot() +
+  geom_point(data = subset(fort, Score == 'sites'),
+             mapping = aes(x = NMDS1, y = NMDS2, colour = mite.env$Shrub),
+             alpha = 0.5) +
+  geom_segment(data = subset(fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0,
+               alpha = 0) +
+  geom_text(data = subset(fort, Score == 'species'),
+            mapping = aes(label = Label, x = NMDS1 * 1.1, y = NMDS2 * 1.1),
+            alpha = 0) +
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        legend.position = c(0.8, 0.2)) +
+  scale_color_discrete("Shrubs")
+
+jpeg("mite_NMDS.jpg", width = 150, height = 250, units = "mm", res = 600)
+ggarrange(p3, p2, ncol = 1)
+dev.off() #turning off the jpeg device
+```
