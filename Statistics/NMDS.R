@@ -5,9 +5,9 @@ library(viridis)
 library(ggvegan)
 library(ggpubr)
 
-APwATs <- read.csv2("https://raw.githubusercontent.com/cmlglvz/heatmapASV/master/Data/APwATs.csv", header = TRUE, sep = ";", dec = ".", skip = 0)
-oASVs <- read.csv2("https://raw.githubusercontent.com/cmlglvz/heatmapASV/master/Data/oASVs.csv", header = TRUE, sep = ";", dec = ".", skip = 0)
-xTXs <- read.csv2("https://raw.githubusercontent.com/cmlglvz/heatmapSPP/master/Data/xTXs.csv", header = TRUE, sep = ";", dec = ".", skip = 0)
+APwATs <- read.csv2("https://raw.githubusercontent.com/cmlglvz/datasets/master/Data/eAnalisis/APwATs.csv", header = TRUE, sep = ";", dec = ".", skip = 0)
+oASVs <- read.csv2("https://raw.githubusercontent.com/cmlglvz/datasets/master/Data/eAnalisis/oASVs.csv", header = TRUE, sep = ";", dec = ".", skip = 0)
+xTXs <- read.csv2("https://raw.githubusercontent.com/cmlglvz/datasets/master/Data/eAnalisis/xTXs.csv", header = TRUE, sep = ";", dec = ".", skip = 0)
 rownames(oASVs) <- oASVs[, 1]
 oASVs <- oASVs[, -1]
 rownames(xTXs) <- xTXs[, 2]
@@ -33,6 +33,7 @@ ShaSeqs <- Shared[, 2]
 ShaASVs <- select(oASVs, all_of(ShaSeqs))
 ShaSPP <- Tax.sum(ShaASVs, xTXs, 10)
 ShaSPP <- ShaSPP[, -17]
+write.csv2(ShaSPP, file = "/Users/Artemis/Documents/GitHub/datasets/Data/eAnalisis/ShaSPP.csv")
 
 rltv.Otu.Table <- function(x){
   x.Data.rltv <- NULL
