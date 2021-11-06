@@ -1,0 +1,101 @@
+---
+title: "PCA en R"
+output: html_document
+---
+
+## 1. Libraries
+```{r Libraries, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+library(vegan)
+library(tidyverse)
+library(BiodiversityR)
+library(ggvegan)
+```
+
+
+
+## 2. Create a Principal Component Analysis of familiar data (examples are with hwy, cty, displ)
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+data(mpg)
+# Subset the data to included columns for displ (#3), cty (#8), and hwy (#9)
+mpg_pca <- mpg[, c(3, 8, 9)]
+# run the analysis
+pca1 <- rda(mpg_pca)
+pca1
+summary(pca1)
+```
+
+### We can use the function "PCAsignificance" from the package 'BiodiversityR' to determine how many axes to retain for interpretation
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+PCAsig <- PCAsignificance(pca1) #retain PC1 based on % > bs%; but still plot PC2
+PCAsig
+```
+
+
+### Plotting the function
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+ordiplot(pca1)
+ordiplot(pca1, type = "text")
+```
+
+
+## 2. Plot the PCA using the package 'ggvegan'
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+# Run autoplot
+autoplot(pca1, legend.position = "none") + 
+  xlab("PC1 (97%)") +
+  ylab("PC2 (2%)") +
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.6) +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.6) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"))
+
+# To have even more control use the "fortify" function
+pca_fort <- fortify(pca1, axes = 1:2)
+ggplot() + 
+  geom_point(data = subset(pca_fort, Score == 'sites'),
+             mapping = aes(x = PC1, y = PC2),
+             colour = "black",
+             alpha = 0.5) +
+  geom_segment(data = subset(pca_fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = PC1, yend = PC2),
+               arrow = arrow(length = unit(0.03, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0.8) + 
+  geom_text(data = subset(pca_fort, Score == 'species'), # crudely push label away
+            mapping = aes(label = Label, x = PC1 * 1.1, y = PC2 * 1.1)) + 
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", sized = 0.7, colour = "gray") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.7, colour = "gray") + 
+  xlab("PC1 (97%)") + 
+  ylab("PC2 (2%)") + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"))
+```
+
+
+### To have even more control
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+
+```
+
+
+
+## text
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+
+```
+
+
+
+
+
+
+
+
+
+
+

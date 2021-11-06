@@ -1,0 +1,120 @@
+---
+title: "vegan examples"
+output: html_document
+---
+
+## 1. Libraries
+```{r Libraries, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+library(vegan)
+library(tidyverse)
+library(ggvegan)
+```
+
+
+
+## 2. Load data (mite examples from package in this instance)
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+data(mite)
+data(mite.env)
+data(mite.pcnm)
+```
+
+
+## 3. Unconstrained ordination example
+
+### Principal component analysis
+```{r , echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+pca <- rda(mite.env[,1:2]) #solo las primeras dos columnas de este data frame
+summary(pca)
+autoplot(pca, arrows = TRUE)
+```
+
+
+## 4. Constrained ordination example
+### Redundancy analysis
+```{r , echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+rda <- rda(mite~SubsDens+WatrCont, data=mite.env)
+rda
+autoplot(rda, arrows = TRUE)
+```
+
+#### You can use more than one predictor variable matrix
+```{r , echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+rda2 <- rda(mite~.+as.matrix(mite.pcnm[,1:3]),data=mite.env)
+rda2
+autoplot(rda2, arrows = TRUE)
+```
+
+#### You can also partition the variation among space and environment
+```{r , echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+v.part <- varpart(mite, mite.env[,1:2], mite.pcnm[,1:3])
+v.part
+plot(v.part)
+```
+
+
+#### We can try with variables divided into more groups
+```{r , echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+v.part2 <- varpart(mite, ~ SubsDens + WatrCont, ~ Substrate + Shrub + Topo, mite.pcnm[,1:3], data = mite.env, transfo = "hel")
+v.part2
+plot(v.part2)
+```
+
+
+## 5. Non-metric Multidimensional Scaling
+```{r , echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+nmds <- metaMDS(mite)
+autoplot(nmds, geom = "text", legend = "none")
+```
+
+
+#### Alternative plot
+```{r , echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+col = c("red", "blue", "green")
+shape = c(18,20,15)
+plot(nmds$points, col = col[mite.env$Shrub], pch = shape[mite.env$Shrub], cex = 1.2, main = "Mite Shrub Groups", xlab = "NMDS 1", ylab = "NMDS 2")
+ordispider(nmds, groups = mite.env$Shrub, label = TRUE)
+```
+
+### You can test for differences in communities among the shrub groups
+```{r , echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+test1 <- adonis(mite~Shrub, data = mite.env, permutations = 999, method = "bray")
+test1
+```
+
+
+### Crtitical asssumption for adonis is that variance is equal among the groups tested for a condition (Shrub in this case). We can test for this
+```{r , echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+distances.mite <- vegdist(mite)
+test2 <- anova(betadisper(distances.mite, mite.env$Shrub))
+test2
+test3 <- envfit(nmds~SubsDens + WatrCont, mite.env)
+test3
+plot(test3)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

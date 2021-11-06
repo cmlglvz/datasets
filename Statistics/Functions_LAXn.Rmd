@@ -1,0 +1,625 @@
+---
+title: "Funciones"
+output: html_document
+---
+
+## Libraries
+
+```{r echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+library(RColorBrewer)
+library(viridis)
+library(colorspace)
+library(pals)
+library(vegan)
+library(GUniFrac)
+library(BiodiversityR)
+library(tidyverse)
+library(ggvegan)
+library(ggpubr)
+library(ggsci)
+library(BiodiversityR)
+```
+
+
+## Funciones:
+
+#### Col.Gen
+Esta funcion genera barridos de colores principalmente para graficos de abundancia relativa se debe proveer una paleta de colores (Col.Pal) equivalente al numero de categorias en el nivel taxonomico mayor deseado (Lvl) y un color contra el cual realizar el 'barrido' (Tendency). La funcion generara colores para cada categoria considerando el numero de opciones en el nivel taxonomico que se desea hacer el plot (Sub.Lvl)
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+Col.Gen <- function(Col.Pal, Otu.Table, Tax.Table, Lvl, Sub.Lvl, Tendency = '#FEFEDF') {
+  if (length(Col.Pal)<length(unique(Tax.Table[colnames(Otu.Table),Lvl]))) {
+    print('Not enough colors for all cateories')
+    } 
+  else {
+    tmp1 <- Col.Pal
+    cols <- NULL
+    Cat.Cols <- list()
+    for (i in 1:length(unique(Tax.Table[colnames(Otu.Table),Lvl]))) {
+      cols <- colorRampPalette(c(tmp1[i], Tendency), space = "rgb", interpolate = "spline")
+      Cat.Cols[[i]] <- data.frame(Color = cols(length(unique(subset(Tax.Table[colnames(Otu.Table), ], 
+                                                                    Tax.Table[colnames(Otu.Table),Lvl] == 
+                                                                      unique(Tax.Table[colnames(Otu.Table), 
+                                                                                       Lvl])[i])[ , Sub.Lvl])) + 1), 
+                                  Names = c(unique(subset(Tax.Table[colnames(Otu.Table),],
+                                                          Tax.Table[colnames(Otu.Table), Lvl] == 
+                                                            unique(Tax.Table[colnames(Otu.Table), Lvl])[i])[,Sub.Lvl]), NA), 
+                                  stringsAsFactors = F)
+      } 
+    names(Cat.Cols) <- unique(Tax.Table[colnames(Otu.Table), Lvl])
+    return(Cat.Cols)
+  }
+}
+
+# Tax.Sum.R, funcion para asignar taxonomia a una OTU.Table y juntar los reads de taxa iguales
+Tax.sum <- function(OTU.Table, Tax.Table, Tax.lvl ){
+  z <- NULL
+  y <- NULL
+  for (i in 1:length(unique(Tax.Table[colnames(OTU.Table),Tax.lvl]))) {
+    if (length(OTU.Table[,which(Tax.Table[colnames(OTU.Table),Tax.lvl]==unique(Tax.Table[colnames(OTU.Table),Tax.lvl])[i])])!=length(rownames(OTU.Table))) {
+      z <- which(Tax.Table[colnames(OTU.Table),Tax.lvl]==unique(Tax.Table[colnames(OTU.Table),Tax.lvl])[i])
+      y <- cbind(y, apply(OTU.Table[,which(Tax.Table[colnames(OTU.Table),Tax.lvl]==unique(Tax.Table[colnames(OTU.Table),Tax.lvl])[i])], 1, function(x) sum(x)))
+    } else { 
+      y <- cbind(y, OTU.Table[,which(Tax.Table[colnames(OTU.Table),Tax.lvl]==unique(Tax.Table[colnames(OTU.Table),Tax.lvl])[i])])
+    }
+  }
+  colnames(y) <- unique(Tax.Table[colnames(OTU.Table),Tax.lvl])
+  invisible((y))
+}
+
+#Abundancia relativa
+rltv.Otu.Table <- function(x){
+x.Data.rltv <- NULL
+for (i in 1:dim(x)[1]) {
+  x.Data.rltv <- rbind(x.Data.rltv, x[i,]/apply(x, 1, function(x) sum(x))[i])
+ }
+invisible(x.Data.rltv)
+}
+```
+
+
+## Dataframes
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+ASV.LAXn <- read.csv("E:/R/Proyecto_Doctorado/Objetivo_1/Archivos/ChaFlaHuPcHo/Sequence_Tables/2nd_Instance/strict_seqtab_nochim.csv", header = T, sep = ";", dec = '.', skip = 0)
+Taxa.Strict13 <- read.csv("E:/R/Proyecto_Doctorado/Objetivo_1/Archivos/ChaFlaHuPcHo/Taxa_Tables/4_13_0/Taxa_PR2-4130_Strict.csv", header = T, sep = ";", dec = '.', skip = 0)
+TX.S13 <- read.csv("E:/R/Proyecto_Doctorado/Objetivo_1/Archivos/ChaFlaHuPcHo/Taxa_Tables/4_13_0/Taxa_PR2-4130_Strict.csv", header = T, sep = ";", dec = '.', skip = 0, na.strings = "NA")
+
+SN.ASV <- ASV.Strict13[,1]
+ASV.S13 <- ASV.Strict13[,-1]
+ASV.S13i <- apply(ASV.S13, 2, function(x) as.numeric(as.integer(x))) %>% as.data.frame() #integer to numeric, conteos de ASVs en data frame
+rownames(ASV.S13i) <- SN.ASV
+
+```
+
+
+## Rarefaction
+Rarefaction is a technique to assess expected species richness. It allows the calculation of species richness for a given number of individual samples, based on the construction of rarefaction curves. The issue that occurs when sampling various species in a community is that the larger the number of individuals sampled, the more species that will be found. Rarefaction curves are created by randomly re-sampling the pool of N samples multiple times and then plotting the average number of species found in each sample (1,2, … N). “Thus rarefaction generates the expected number of species in a small collection of n individuals (or n samples) drawn at random from the large pool of N samples.”. Rarefaction curves generally grow rapidly at first, as the most common species are found, but the curves plateau as only the rarest species remain to be sampled.
+
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+rownames(TX.S13) <- TX.S13[,1]
+print(all(colnames(ASV.S13i)%in%rownames(TX.S13))) #if TRUE you can continue
+
+TSEj <- Tax.sum(ASV.S13, TX.S13, 9) %>% as.data.frame() #ASV+taxa de acuerdo a nivel spp. (8 = genero, 7 = familia, 6 = orden, 5 = clase, 4 = división, 3 = supergrupo, 2 = reino)
+TSEi <- Tax.sum(ASV.S13i, TX.S13, 9) %>% as.data.frame() #esto último es para que matrices queden como dataframe (df), hecho de manera arcaica, se recomienda volver a esto pero utilizando funciones de tidyverse para generar dfs de buena calidad.
+summary(TSEj)
+summary(TSEi)
+str(TSEj)
+str(TSEi)
+names(TSEj)[1] <- "NA"
+
+#Colores para graficar 
+UCSC <- pal_ucscgb("default", alpha = 1)(26)
+#kolors <- colorRampPalette(colors = viridis(25))
+#rand.cols <- sample(kolors(dim(TSEj)[2]))
+#kolors.2 <- colorRampPalette(c("#FA0000","#FFD700", "#C0E218", "#00FF7F", "#00FF00", "#7FFFD4", "#0000FF", "#000080", "#4E0066", "#F5005A"))
+#rand.cols.2 <- sample(kolors.2(dim(Tax.sum(ASV.S13, Taxa.Strict13, 9))[2]))
+
+print('CLASS SPECIES')
+plot.new()
+par(mar = c(0,0,0,0), oma = c(0,0,0,0))
+legend("center", legend = colnames(TSEj), cex = 1.1, ncol = 2, fill = UCSC, x.intersp = 0.3, xjust = 0.3, yjust = 0.3, y.intersp = 0.9, bty = "n", adj = 0, text.width = 0.3, pt.cex = 0.8)
+
+par(mar = c(5.1,4.1,4.1,2.1), oma = c(0,0,0,0))
+barplot(t(TSEj), border = NA, xlab = "Samples", ylab = "Sample Size", ylim = c(0,2000), axes = TRUE, col = UCSC, las = 2, cex.names = 0.6)
+```
+
+# Fijarse que la primera columna de la tabla resultante corresponde a los valores NA del df de taxa que fueron tratados como "0" al obtener TSEj. Al realizar analisis posteriores dichos datos obtienen un valor correspondiente por lo que no se suelen considerar dentro de algunas funciones pero estadisticamente si ejercen un efecto apreciable en el análisis de los datos. Esto se puede apreciar claramente cuando vemos que la ausencia de datos dentro de una variable se debe precisamente a dicha variable, por ejemplo, podemos seguir la ASV1, ASV38, ASV45 a lo largo de las clasificaciones taxonómicas. Al igual que el resto de ASVs en la matriz, estas se pueden asignar al rino eukaryota, pero si subimos de nivel, vemos claramente que solo ASV38 y ASV45 pueden asignarse a la clasificación de supergrupo, y no así ASV1, lo cual además condiciona sus clasificaciones consecuentes. Posteriormente vemos como las 2 ASVs restantes se pueden asignar sólo hasta el nivel de división taxonómica mientras que otras ASVs se pueden asignar hasta el nivel de especie.
+# Si fuesemos siguiendo las ASVs a lo largo de las asignaciones por niveles esto se vería claramente, además esta idea se refuerza también por el hecho que no existen (por lo menos en este set de datos) asignaciones que se produzcan despues de un valor NA, lo que a su vez nos puede hablar de la robustes de la técnica de asignación. No obstante, no podemos aseverar que la asignación producida haya sido erronea, para lo cual es necesario otro set de datos que tengan un origen similar a nuestras muestras actuales y que se hayan sometidos a procesamientos similares donde la misma secuencia de ASV1 genere la misma clasificación.
+# Estos datos ausentes se pueden clasificar como valores "Missing not at random" (MNAR) y estadisticamente no deben ser considerados como faltantes ni atribuirles un valor "0".
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+raremax <- sort(rowSums(ASV.S13i)) #Sumatoria de reads por muestra y ordenados de menor a mayor
+raremax
+plot(raremax)
+
+raremin <- min(rowSums(ASV.S13i))
+raremin
+plot(raremin)
+
+CCC <- rarefy(ASV.S13i, raremin) #El numero indica el mas malo, al graficar sólo se aprecia este punto
+CCC
+BBB <- rarefy(ASV.S13i, raremax[1]) #Lo mismo pero de otra forma, indicamos el más malo, pero como en el ejemplo del Benja, podemos indicar el tercero más malo
+BBB
+BBB3 <- rarefy(ASV.S13i, raremax[3])
+BBB3
+AAA <- Rarefy(ASV.S13i, depth = raremax) #Rarefacción con paquete "GUniFrac"
+AAA #Debemos notar como al final nos indica que se descartaron 26 sitios de muestreo
+#OTUs despues de rarefaccionar con Rarefy de GUniFrac
+d <- AAA$otu.tab.rff[,which(apply(AAA$otu.tab.rff, 2, function(x) sum(x))!=0)] #OTUs despues de rarefaccionar con Rarefy de GUniFrac
+d1 <- d[,which(apply(d, 2, function(x) sum(x))!=0)]
+
+#Colores para el siguiente gráfico (varias opciones)
+paletapers <- colorRampPalette(c("#FA0000","#FFD700", "#C0E218", "#00FF7F", "#00FF00", "#7FFFD4", "#0000FF", "#000080", "#4E0066", "#F5005A"))(43)
+# Otras opciones de colores
+#colores <- viridis(43)
+#q4 <- diverging_hcl(43, palette = "Cyan-Magenta")
+#colores.2 <- qualitative_hcl(43, palette = "Dark 3")
+#colores.3 <- turbo(43)
+
+tiff("Plot.tiff", width = 12, height = 6, units = 'in', res = 600)
+#rarecurve(x = ASV.S13i, col = paletapers, lwd = 2, las = 1, label = T, step = 10, cex = 0.5) #El aqui debe contener solo intergers
+#par(mar=c(5.1,4.1,4.1,2.1), oma=c(0,0,0,0))
+rarecurve(x = ASV.S13i, col = paletapers, lwd = 2, las = 1, label = TRUE, step = 10, cex = 0.5)
+dev.off()
+
+```
+
+
+## Para los siguientes analisis, el set de datos se trato considerando que cada OTU debe tener una presencia minima. Esta se definio en 2 muestras debido al numero limitado de muestras de agua (n=3). S02EXPI16S.Otu.Table.2 fue utilizada para los analisis posteriores. No se utilizo rarefaccion en el set de datos. Finalmente se realizo una limpieza de la tabla eliminando aquellas OTUs que representaban un pequeno porcentaje de la abundancia (0.0003%). Esto resulto en una reduccion de OTUs de ~1500, pero con bajo impacto en las lecturas (desde 3850003 a 3778334).
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+x <- NULL
+for (i in 1:dim(ASV.S13i)[1]){
+  x <- c(x, dim(ASV.S13i[,which(apply(ASV.S13i, 2, function(x) length(which(x>0)))>=i)])[2])
+}
+plot(x, xlab = 'Min presence', ylab = 'Total ASVs in Data Set')
+ASV.MPS13i <- ASV.S13i[,which(apply(ASV.S13i, 2, function(x) length(which(x>0)))>=2)] %>% as.matrix() #presencia mínima de 'x' ASVs en muestras
+
+x <- NULL
+for (i in seq(.0001, 1, .0001)) {
+  x <- c(x, length(which(colSums(ASV.MPS13i)*100/sum(colSums(ASV.MPS13i)) >= i)))
+}
+plot(seq(.0001, 1, .0001), x, xlab = '% Deleted', ylab = 'Total ASVs in Data Set')
+plot(seq(.0001, 1, .0001)[1:1000], x[1:1000], xlab = "% Deleted", ylab = "Total ASVs in Data Set", main = "Zoom")
+ASV.MPS13i <- ASV.MPS13i[, which(colSums(ASV.MPS13i)*100/sum(colSums(ASV.MPS13i)) >= seq(.0001, 1, .0001)[5])] %>% as.data.frame() #0.0005%, tengo que ver si estos cambios provocan algun efecto estadistico facilmente observable
+
+print('Total reads from raw OTU table:')
+print(sum(rowSums(ASV.S13i)))
+print('Total reads from trimmed OTU table:')
+print(sum(rowSums(ASV.MPS13i)))
+print('Difference in reads between both treatments:')
+print(sum(rowSums(ASV.S13i))-sum(rowSums(ASV.MPS13i))) #Se redujeron 3307 ASVs (de 15888 a 12581)
+
+#Abundancia relativa
+print(all(colnames(ASV.MPS13i)%in%rownames(TX.S13))) #if TRUE you can continue
+
+TX2.S13 <- TX.S13[colnames(ASV.MPS13i),]
+
+rltv.Otu.Table <- function(x){
+x.Data.rltv <- NULL
+for (i in 1:dim(x)[1]) {
+ x.Data.rltv <- rbind(x.Data.rltv, x[i,]/apply(x, 1, function(x) sum(x))[i])
+}
+rownames(x.Data.rltv) <- rownames(x)
+invisible(x.Data.rltv)
+}                                                                      
+
+#Sin filtro
+ASV.S13.Rltv <- rltv.Otu.Table(ASV.S13i)
+apply(ASV.S13.Rltv, 2, function(x) sum(x))[1:43]
+rownames(ASV.S13.Rltv) <- SN.ASV
+View(ASV.S13.Rltv)
+
+#Filtrado
+ASV.MPS13i.Rltv <- rltv.Otu.Table(ASV.MPS13i)
+apply(ASV.MPS13i.Rltv, 2, function(x) sum(x))[1:43]
+rownames(ASV.MPS13i.Rltv) <- SN.ASV
+View(ASV.MPS13i.Rltv)
+```
+
+
+## Forma de uso
+
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+#Pendiente, aún no lo sé usar, ni me resulta (SADGE)
+Cat.Cols <- Col.Gen(Col.Pal = viridis(50), #Una paleta cualquiera
+                    Otu.Table = ASV.S13.Rltv, #Otu table que contenga los datos
+                    Tax.Table = TX.S13, #Taxonomia Asociada a la Otu Table
+                    Lvl = 2, # Nivel mayor
+                    Sub.Lvl = 3, #Nivel al que se quiere hacer el grafico
+                    Tendency = '#C4C4BD') #Color contra el cual se realiza el barrido, en este caso un tono de gris
+
+for (i in 1:length(Cat.Cols)) {
+  plot(rep(i, dim(Cat.Cols[[i]])[1]), col = Cat.Cols[[i]][,1], pch = 16, cex = 2, ylim = c(-2, length(Cat.Cols)+2), 
+       xlim = c(0,30)) #note que si ocupa Sub.Lvl > 4 es posible que se generen mas de 20 colores (en el ejemplo)
+  par(new=T)
+}
+par(new=F)
+
+tmp1 <- NULL
+for (i in 1:length(Cat.Cols)) {
+  tmp1 <- c(tmp1, Cat.Cols[[i]][1:(dim(Cat.Cols[[i]])[1]-1),2])
+  }
+
+tmp2 <- NULL
+for (i in 1:length(Cat.Cols)) {
+  tmp2 <- c(tmp2, Cat.Cols[[i]][1:(dim(Cat.Cols[[i]])[1]-1),1])
+  }
+
+# Ahora puede usar el objeto tmp1 para indexar en su tabla de otus una vez sume los reads con la funcion 'Tax.sum' y puede usar tmp2 en el argumento 'col' para asociar el color a cada categoria de forma correlativa al orden contenido en tmp1
+```
+
+
+## PCA sin filtro de muestras y secuencias
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+TSiR <- Tax.sum(ASV.S13.Rltv, TX.S13, 9) %>% as.data.frame()
+names(TSiR)[1] <- "NA" #Aun no evaluo el problema con MNAR data
+
+pca <- rda(TSiR, scale = TRUE)
+pca
+summary(pca)
+ordiplot(pca, type = "text")
+
+PCAsig <- PCAsignificance(pca) #retain PCA based on % > bs%, seleccin de los mejores PCAs
+PCAsig
+ordiplot(pca, choices = c(6,7), type = "text") #En base a lo observado en la significancia de cada PCA
+
+# To have even more control use the "fortify" function
+pca_fort <- fortify(pca, axes = 6:7)
+pca_fort #En este punto ya queda demasiado claro el aporte que tienen los valores NA de tipo MNAR generados durante la asignación taxonomica. Durante la realización de los PCA también podemos apreciar que sucede con nuesto set de datos si omitimos o borramos estos valores.
+ggplot() + 
+  geom_point(data = subset(pca_fort, Score == 'sites'),
+             mapping = aes(x = PC6, y = PC7),
+             colour = "#FF6B6B",
+             alpha = 0.5) +
+  geom_segment(data = subset(pca_fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = PC6, yend = PC7),
+               arrow = arrow(length = unit(0.02, "npc"),
+                             type = "open"),
+               colour = "#297F87",
+               size = 0.5) + 
+  geom_text(data = subset(pca_fort, Score == 'species'), # crudely push label away
+            mapping = aes(label = Label, x = PC6 * 1.2, y = PC7 * 1.2)) + 
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", sized = 0.7, colour = "darkgray") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.7, colour = "darkgray") + 
+  xlab("PC6 (7.1%)") + 
+  ylab("PC7 (6.1%)") + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black")) + 
+  expand_limits(x = c(-5, 3), y = c(-2, 4))
+
+```
+
+## PCA con filtro de muestras y secuencias
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+TSMPRltv <- Tax.sum(ASV.MPS13i.Rltv, TX2.S13, 9) %>% as.data.frame()
+names(TSMPRltv)[1] <- "NA"
+
+pcaMP <- rda(TSMPRltv, scale = TRUE)
+pcaMP
+summary(pcaMP)
+ordiplot(pcaMP, type = "text")
+
+PCAMPSig <- PCAsignificance(pcaMP)
+PCAMPSig
+ordiplot(pcaMP, choices = c(5,6), type = "text")
+
+# To have even more control use the "fortify" function
+pcaMP_fort <- fortify(pcaMP, axes = 5:6) #de acuerdo a PCAsig PCA2 a PCA8 ejercen un efecto más significativo sobre la varianza, comenzaremos graficando estas primero y el resto se debiesen comparar siempre con PC2 (PC2vPC4; PC2vPC5, etc...)
+pcaMP_fort
+ggplot() + 
+  geom_point(data = subset(pcaMP_fort, Score == 'sites'),
+             mapping = aes(x = PC5, y = PC6),
+             colour = "#FF6B6B",
+             alpha = 0.5) +
+  geom_segment(data = subset(pcaMP_fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = PC5, yend = PC6),
+               arrow = arrow(length = unit(0.02, "npc"),
+                             type = "open"),
+               colour = "#297F87",
+               size = 0.5) + 
+  geom_text(data = subset(pcaMP_fort, Score == 'species'), # crudely push label away
+            mapping = aes(label = Label, x = PC5 * 1.2, y = PC6 * 1.2)) + 
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", sized = 0.7, colour = "darkgray") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.7, colour = "darkgray") + 
+  xlab("PC5 (8.3%)") + 
+  ylab("PC6 (7%)") + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black")) + 
+  expand_limits(x = c(-2, 4), y = c(-4, 2))
+
+```
+
+
+## Data transformation
+Occasionally, the variables in a "raw" data set have properties that violate an assumption of a statistical procedure (e.g. normally distributed values) or which cannot be compared to other variables due to differences in scale or variability. For example, principal components analysis (PCA) *requires that variables be linearly related to one another and on roughly the same scale or will perform poorly*. Rather than abandoning an analysis due to inappropriate data structure, it may be possible to transform the variables so they satisfy the conditions in question. A transformation involves the *application of a mathematical procedure to every value of a given variable or set of variables to create a new set of values*. The new values of the transformed variables should still represent the data, but will be more amenable to analysis or comparison. 
+
+### Ecologically motivated transformations 
+These transformations are closely related to several *(dis)similarity and distance measures* and have their collective basis in ecological theory. These transformations may be applied prior to analyses such as principal components analysis (PCA) or redundancy analysis (RDA) of, for example, abundance data. These analyses use simple *Euclidean distances in their ordinations which are often not appropriate for count data*. Hence, these transformations may improve the effectiveness of many analyses in representing ecological relationships. Formulae, further explanation, and examples are available in: Legendre P, Gallagher ED (2001) Ecologically meaningful transformations for ordination of species data. Oecologia. 129(2): 271-280.
+*Hellinger:* Particularly suited to *species abundance data*, this transformation gives low weights to variables with low counts and many zeros. The transformation itself comprises dividing each value in a data matrix by its row sum, and taking the square root of the quotient.
+
+
+## PCA with Hellinger transformation values (data w/o filter)
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+TS.hel <- decostand(TSiR, method = "hellinger")
+
+pca.hel <- rda(TS.hel, scale = TRUE)
+pca.hel
+summary(pca.hel)
+ordiplot(pca.hel, type = "text")
+
+PCAHS <- PCAsignificance(pca.hel) #retain PCA based on % > bs%; but still plot PC2
+PCAHS
+ordiplot(pcaMP, choices = c(6,7), type = "text") #Quizás es notable que los PCA se mantuvieron, pero la ordenacion de los datos en si cambio
+
+pca.hel.fort <- fortify(pca.hel, axes = 6:7)
+pca.hel.fort
+ggplot() + 
+  geom_point(data = subset(pca.hel.fort, Score == 'sites'),
+             mapping = aes(x = PC6, y = PC7),
+             colour = "#3E978B",
+             alpha = 0.5) +
+  geom_segment(data = subset(pca.hel.fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = PC6, yend = PC7),
+               arrow = arrow(length = unit(0.02, "npc"),
+                             type = "open"),
+               colour = "#480032",
+               size = 0.5) + 
+  geom_text(data = subset(pca.hel.fort, Score == 'species'), # crudely push label away
+            mapping = aes(label = Label, x = PC6 * 1.2, y = PC7 * 1.2)) + 
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 1, colour = "darkgray") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.7, colour = "darkgray") + 
+  xlab("PC3 (6.7%)") + 
+  ylab("PC6 (6.1%)") + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black")) + 
+  expand_limits(x = c(-3, 4), y = c(-3, 4))
+```
+
+
+## PCA with Hellinger transformation values (data w filter)
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+TSMPR.hel <- decostand(TSMPRltv, method = "hellinger")
+
+pcaMP.hel <- rda(TSMPR.hel, scale = TRUE)
+pcaMP.hel
+summary(pcaMP.hel)
+ordiplot(pcaMP.hel, type = "text")
+
+PCAMPR.HS <- PCAsignificance(pcaMP.hel) 
+PCAMPR.HS
+ordiplot(pcaMP, choices = c(6,7), type = "text")
+
+PCAMPRH.fort <- fortify(pcaMP.hel, axes = 6:7)
+PCAMPRH.fort
+ggplot() + 
+  geom_point(data = subset(PCAMPRH.fort, Score == 'sites'),
+             mapping = aes(x = PC6, y = PC7),
+             colour = "#FF0000",
+             alpha = 0.5) +
+  geom_segment(data = subset(PCAMPRH.fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = PC6, yend = PC7),
+               arrow = arrow(length = unit(0.02, "npc"),
+                             type = "open"),
+               colour = "#480032",
+               size = 0.5) + 
+  geom_text(data = subset(PCAMPRH.fort, Score == 'species'), # crudely push label away
+            mapping = aes(label = Label, x = PC6 * 1.2, y = PC7 * 1.2)) + 
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 1, colour = "darkgray") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.7, colour = "darkgray") + 
+  xlab("PC6 (7.4%)") + 
+  ylab("PC7 (6.5%)") + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black")) + 
+  expand_limits(x = c(-3, 2), y = c(-2, 4))
+```
+
+
+## NMDS w/o filt
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+nmds1 <- metaMDS(TS.hel, autotransform = FALSE) #No es necesario realizar una autotransformacion del df porque se hizo en el paso anterior
+summary(nmds1)
+ordiplot(nmds1, type = "text")
+
+autoplot(nmds1)
+#full control with fortified ordination output
+NMDS_fort <- fortify(nmds1)
+ggplot() +
+  geom_point(data = subset(NMDS_fort, Score == 'sites'),
+             mapping = aes(x= NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0.5) +
+  geom_segment(data = subset(NMDS_fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray", 
+               size = 0.8) +
+  geom_text(data = subset(NMDS_fort, Score == 'species'), #crudely push labels away
+            mapping = aes(label = Label, x = NMDS1 * 1.2, y = NMDS2 * 1.2)) +
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black")) +
+  expand_limits(x = c(-3, 3), y = c(-2, 2))
+```
+
+
+### Make a two panel plot to reduce complexity
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+p1 <- ggplot() +
+  geom_point(data = subset(NMDS_fort, Score == 'sites'),
+             mapping = aes(x = NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0.5) +
+  geom_segment(data = subset(NMDS_fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0,
+               alpha = 0) +
+  geom_text(data = subset(NMDS_fort, Score == 'species'),
+            mapping = aes(label = Label, x = NMDS1 * 1.2, y = NMDS2 * 1.2),
+            alpha = 0) +
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"))
+
+p2 <- ggplot() +
+  geom_point(data = subset(NMDS_fort, Score == 'sites'),
+             mapping = aes(x = NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0) +
+  geom_segment(data = subset(NMDS_fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0.8) +
+  geom_text(data = subset(NMDS_fort, Score == 'species'),
+            mapping = aes(label = Label, x = NMDS1 * 1.1, y = NMDS2 * 1.1)) + 
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"))
+
+#create a multi-panel plot with one column
+ggarrange(p1, p2, ncol = 1)
+```
+
+
+## NMDS w/o filt
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+nmds.mpr <- metaMDS(TSMPR.hel, autotransform = FALSE)
+summary(nmds.mpr)
+ordiplot(nmds.mpr, type = "text")
+
+autoplot(nmds.mpr)
+#full control with fortified ordination output
+NMDS.MPRfort <- fortify(nmds.mpr)
+ggplot() +
+  geom_point(data = subset(NMDS.MPRfort, Score == 'sites'),
+             mapping = aes(x= NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0.5) +
+  geom_segment(data = subset(NMDS.MPRfort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray", 
+               size = 0.8) +
+  geom_text(data = subset(NMDS.MPRfort, Score == 'species'), #crudely push labels away
+            mapping = aes(label = Label, x = NMDS1 * 1.2, y = NMDS2 * 1.2)) +
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black")) +
+  expand_limits(x = c(-2, 2), y = c(-2, 2))
+```
+
+
+### Two panel plot NMDS filt data transformed
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+MPRH1 <- ggplot() +
+  geom_point(data = subset(NMDS.MPRfort, Score == 'sites'),
+             mapping = aes(x = NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0.5) +
+  geom_segment(data = subset(NMDS.MPRfort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0,
+               alpha = 0) +
+  geom_text(data = subset(NMDS.MPRfort, Score == 'species'),
+            mapping = aes(label = Label, x = NMDS1 * 1.2, y = NMDS2 * 1.2),
+            alpha = 0) +
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"))
+
+MPRH2 <- ggplot() +
+  geom_point(data = subset(NMDS.MPRfort, Score == 'sites'),
+             mapping = aes(x = NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0) +
+  geom_segment(data = subset(NMDS.MPRfort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0.8) +
+  geom_text(data = subset(NMDS.MPRfort, Score == 'species'),
+            mapping = aes(label = Label, x = NMDS1 * 1.1, y = NMDS2 * 1.1)) + 
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"))
+
+#create a multi-panel plot with one column
+ggarrange(MPRH1, MPRH2, ncol = 1)
+```
+
+
+########################################################## HASTA ACA REVISADO 22-08-2021 1:17 AM #####################################################################
+
+## Test for differences in mite community composition across shrub level
+Se necesita un dataframe con variable ambiental, se debe construir
+```{r, echo=TRUE, message=TRUE, warning=TRUE}
+summary(mite.env) #summary of each of the columns in this data
+adonis(mite ~ Shrub, data = mite.env)
+
+#then show this in the nmds plot
+p3 <- ggplot() +
+  geom_point(data = subset(fort, Score == 'sites'),
+             mapping = aes(x = NMDS1, y = NMDS2, colour = mite.env$Shrub),
+             alpha = 0.5) +
+  geom_segment(data = subset(fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0,
+               alpha = 0) +
+  geom_text(data = subset(fort, Score == 'species'),
+            mapping = aes(label = Label, x = NMDS1 * 1.1, y = NMDS2 * 1.1),
+            alpha = 0) +
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        legend.position = c(0.8, 0.2)) +
+  scale_color_discrete("Shrubs")
+
+jpeg("mite_NMDS.jpg", width = 150, height = 250, units = "mm", res = 600)
+ggarrange(p3, p2, ncol = 1)
+dev.off() #turning off the jpeg device
+```

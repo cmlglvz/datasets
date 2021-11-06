@@ -1,0 +1,165 @@
+---
+title: "NMDS en R"
+output: html_document
+---
+
+## 1. Libraries
+```{r Libraries, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+library(vegan)
+library(tidyverse)
+library(ggvegan)
+library(ggpubr)
+```
+
+
+
+## 2. Load mite community and environmental data from vegan package
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+data(mite)
+data("mite.env")
+# Transform the mite community fata using hellinger transformation
+mite.hel <- decostand(mite, method = "hellinger")
+nmds1 <- metaMDS(mite.hel , autotransform = FALSE)
+```
+
+## 3. Plotting
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+ordiplot(nmds1) #basic plotting function
+ordiplot(nmds1, type = "t")
+```
+
+
+### Use 'ggvegan' autoplot 
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+autoplot(nmds1)
+#full control with fortified ordination output
+fort <- fortify(nmds1)
+ggplot() +
+  geom_point(data = subset(fort, Score == 'sites'),
+             mapping = aes(x= NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0.5) +
+  geom_segment(data = subset(fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray", 
+               size = 0.8) +
+  geom_text(data = subset(fort, Score == 'species'), #crudely push labels away
+            mapping = aes(label = Label, x = NMDS1 * 1.1, y = NMDS2 * 1.1)) +
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"))
+```
+
+
+### Make a two panel plot to reduce complexity
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+p1 <- ggplot() +
+  geom_point(data = subset(fort, Score == 'sites'),
+             mapping = aes(x = NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0.5) +
+  geom_segment(data = subset(fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0,
+               alpha = 0) +
+  geom_text(data = subset(fort, Score == 'species'),
+            mapping = aes(label = Label, x = NMDS1 * 1.1, y = NMDS2 * 1.1),
+            alpha = 0) +
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"))
+
+p2 <- ggplot() +
+  geom_point(data = subset(fort, Score == 'sites'),
+             mapping = aes(x = NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0) +
+  geom_segment(data = subset(fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0.8) +
+  geom_text(data = subset(fort, Score == 'species'),
+            mapping = aes(label = Label, x = NMDS1 * 1.1, y = NMDS2 * 1.1)) +
+  
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"))
+
+#create a multi-panel plot with one column
+ggarrange(p1, p2, ncol = 1)
+```
+
+
+## 4. Test for differences in mite community composition across shrub level
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+summary(mite.env) #summary of each of the columns in this data
+adonis(mite ~ Shrub, data = mite.env)
+
+#then show this in the nmds plot
+p3 <- ggplot() +
+  geom_point(data = subset(fort, Score == 'sites'),
+             mapping = aes(x = NMDS1, y = NMDS2, colour = mite.env$Shrub),
+             alpha = 0.5) +
+  geom_segment(data = subset(fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0,
+               alpha = 0) +
+  geom_text(data = subset(fort, Score == 'species'),
+            mapping = aes(label = Label, x = NMDS1 * 1.1, y = NMDS2 * 1.1),
+            alpha = 0) +
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        legend.position = c(0.8, 0.2)) +
+  scale_color_discrete("Shrubs")
+
+ggarrange(p3, p2, ncol = 1)
+```
+
+
+### Export the figure as a jpeg with 600 dpi
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+jpeg("mite_NMDS.jpg", width = 150, height = 250, units = "mm", res = 600)
+ggarrange(p3, p2, ncol = 1)
+dev.off() #turning off the jpeg device
+```
+
+
+
+## text
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+
+```
+
+
+
+
+
+
+
+
+
+
+
