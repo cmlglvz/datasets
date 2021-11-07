@@ -16,4 +16,4 @@ Códigos en utilizados para el **Objetivo 1** de tesis se guardaran en
 una carpeta correspondiente para ser compartidos posteriormente en
 repositorio de laboratorio.
 
-[Rock](%22/Users/Artemis/Documents/GitHub/datasets/Images/rock.png%22)
+:vulcan_salute: :metal:
