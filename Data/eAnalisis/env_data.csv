@@ -1,16 +1,16 @@
-SAMPLE,CODIGO,SITIO,NO2 µmol-L,PO4 µmol-L,SILICATO µmol-L,NO3 µmol-L,51V µg-L,56Fe µg-L,59Co µg-L,60Ni µg-L,65Cu µg-L,66Zn µg-L,95Mo µg-L,107Ag µg-L,111Cd µg-L,208Pb µg-L,Chl-a mg-m3,Chl Total mg-m3,Feopigmentos mg m-3
-C1_2017.08,C1A17_AATAAT-CG8YP,Chañaral,0.21,0.81,1.75,3.04,< 0.1,0.73,< 0.1,< 0.1,11.66,< 0.1,5.27,< 0.1,< 0.05,< 0.1,3.41,4.28,0.87
-C1_2018.02,C1F18_TTCGCA-CG8YP,Chañaral,,,,,,,,,,,,,,,,,
-C1_2018.08,C1A18_AGGAGG-CG8YP,Chañaral,,,,,,,,,,,,,,,,,
-C2_2017.08,C2A17_GGCTGC-CG8YP,Chañaral,0.21,0.88,1.51,3.22,< 0.1,< 0.1,< 0.1,< 0.1,24.34,< 0.1,6.39,< 0.1,< 0.05,< 0.1,1.81,3.93,2.12
-C2_2018.02,C2F18_GATGAC-CG8YP,Chañaral,,,,,,,,,,,,,,,,,
-C2_2018.08,C2A18_GCGGTT-CG8YP,Chañaral,,,,,,,,,,,,,,,,,
-C3_2017.08,C3A17_TTCCGT-CG8YP,Chañaral,0.46,1.13,7.40,9.17,< 0.1,1.69,< 0.1,< 0.1,24.17,1.64,8.40,< 0.1,< 0.05,< 0.1,1.52,2.17,0.65
-C3_2018.02,C3F18_CCCAGG-CG8YP,Chañaral,,,,,,,,,,,,,,,,,
-C3_2018.08,C3A18_AGGATA-CG8YP,Chañaral,,,,,,,,,,,,,,,,,
-C4_2017.08,C4A17_AGTGTC-CG8YP,Chañaral,0.18,0.68,1.38,2.50,0.15,2.07,< 0.1,< 0.1,13.13,1.37,5.81,< 0.1,< 0.05,< 0.1,2.37,3.21,0.83
-C4_2018.02,C4F18_GTCAGG-CG8YP,Chañaral,,,,,,,,,,,,,,,,,
-C4_2018.08,C4A18_TGCTCC-CG8YP,Chañaral,,,,,,,,,,,,,,,,,
+SAMPLE,CODIGO,SITIO,NO2 umol-L,PO4 umol-L,SILICATO umol-L,NO3 umol-L,51V ug-L,56Fe ug-L,59Co ug-L,60Ni ug-L,65Cu ug-L,66Zn ug-L,95Mo ug-L,107Ag ug-L,111Cd ug-L,208Pb ug-L,Chl-a mg-m3,Chl Total mg-m3,Feopigmentos mg m-3
+C1_2017.08,C1A17_AATAAT-CG8YP,Chanaral,0.21,0.81,1.75,3.04,< 0.1,0.73,< 0.1,< 0.1,11.66,< 0.1,5.27,< 0.1,< 0.05,< 0.1,3.41,4.28,0.87
+C1_2018.02,C1F18_TTCGCA-CG8YP,Chanaral,,,,,,,,,,,,,,,,,
+C1_2018.08,C1A18_AGGAGG-CG8YP,Chanaral,,,,,,,,,,,,,,,,,
+C2_2017.08,C2A17_GGCTGC-CG8YP,Chanaral,0.21,0.88,1.51,3.22,< 0.1,< 0.1,< 0.1,< 0.1,24.34,< 0.1,6.39,< 0.1,< 0.05,< 0.1,1.81,3.93,2.12
+C2_2018.02,C2F18_GATGAC-CG8YP,Chanaral,,,,,,,,,,,,,,,,,
+C2_2018.08,C2A18_GCGGTT-CG8YP,Chanaral,,,,,,,,,,,,,,,,,
+C3_2017.08,C3A17_TTCCGT-CG8YP,Chanaral,0.46,1.13,7.40,9.17,< 0.1,1.69,< 0.1,< 0.1,24.17,1.64,8.40,< 0.1,< 0.05,< 0.1,1.52,2.17,0.65
+C3_2018.02,C3F18_CCCAGG-CG8YP,Chanaral,,,,,,,,,,,,,,,,,
+C3_2018.08,C3A18_AGGATA-CG8YP,Chanaral,,,,,,,,,,,,,,,,,
+C4_2017.08,C4A17_AGTGTC-CG8YP,Chanaral,0.18,0.68,1.38,2.50,0.15,2.07,< 0.1,< 0.1,13.13,1.37,5.81,< 0.1,< 0.05,< 0.1,2.37,3.21,0.83
+C4_2018.02,C4F18_GTCAGG-CG8YP,Chanaral,,,,,,,,,,,,,,,,,
+C4_2018.08,C4A18_TGCTCC-CG8YP,Chanaral,,,,,,,,,,,,,,,,,
 F1_2017.08,F1A17_CCGTAG-CG8YP,Flamenco,0.41,1.95,8.46,15.35,< 0.1,1.86,< 0.1,< 0.1,0.89,< 0.1,4.34,< 0.1,< 0.05,< 0.1,0.37,0.49,0.11
 F1_2018.02,F1F18_GGCGTA-CG8YP,Flamenco,,,,,,,,,,,,,,,,,
 F1_2018.08,F1A18_GCCAGC-CG8YP,Flamenco,,,,,,,,,,,,,,,,,
