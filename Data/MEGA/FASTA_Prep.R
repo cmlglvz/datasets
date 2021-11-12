@@ -1,4 +1,5 @@
 library(tidyverse)
+library(dada2)
 library(ShortRead)
 library(DECIPHER)
 library(Biostrings)
@@ -48,3 +49,41 @@ ASV <- rownames(ShaTaxa)
 Shared <- add_column(Shared, ASV = ASV, .before = "Seq")
 rownames(Shared) <- ASV
 write.csv2(Shared, file = "C:/Users/Camilo/Dropbox/R/MEGA/shared_complete_table.csv")
+
+#############################################################################################
+
+ShaASV <- read.csv2("C:/Users/Camilo/Dropbox/R/MEGA/seqtab_shared.csv", sep = ";", dec = ".", skip = 0, fill = TRUE)
+rownames(ShaASV) <- ShaASV$X
+ShaASV <- ShaASV[, -1]
+ShaTaxa <- read.csv2("C:/Users/Camilo/Dropbox/R/MEGA/shared_taxa.csv", sep = ";", dec = ".", skip = 0)
+rownames(ShaTaxa) <- ShaTaxa[, 2]
+Shared <- read.csv2("C:/Users/Camilo/Dropbox/R/MEGA/shared_complete_table.csv", sep = ";", dec = ".", skip = 0)
+rownames(Shared) <- Shared[, 1]
+Shared <- Shared[, -1]
+
+sn.sha <- seqtab.nochim %>% select(all_of(colnames(ShaASV)))
+write.csv2(seqtab.nochim, file = "C:/Users/Camilo/Dropbox/R/MEGA/seqtab_nochim.csv")
+sn.sha <- read.csv2("C:/Users/Camilo/Dropbox/R/MEGA/seqtab_nochim.csv", header = TRUE, sep = ";", fill = TRUE)
+rownames(sn.sha) <- ShaASV$X
+sn.sha <- sn.sha[, -1]
+PPE <- colnames(ShaASV)
+dna <- DNAStringSet(getSequences(seqtab.sha))
+tax_info <- IdTaxa(test = dna, trainingSet = trainingSet, strand = "both", processors = NULL)
+asv_seqs <- colnames(seqtab.sha)
+asv_headers <- vector(dim(seqtab.sha)[2], mode="character")
+trainingSet <- pr2_version_4.14.0_SSU.decipher.trained
+ASV <- Shared$ASV
+ASV <- paste(">", ASV, sep = "")
+uniques <- Shared[, -c(2, 11:51)]
+uniques$ASV <- paste(">", uniques$ASV, sep = "")
+rownames(uniques) <- c()
+write.csv2(uniques, file = "C:/Users/Camilo/Dropbox/R/Analisis/uniques.csv")
+uniques <- read.csv("C:/Users/Camilo/Dropbox/R/Analisis/uniques.txt", header=FALSE) #After edited with notepad
+uniques <- uniques$V1
+asv_fasta <- c(rbind(uniques, asv_seqs))
+write(asv_fasta, "ASVs.fasta")
+
+
+
+
+
