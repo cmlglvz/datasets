@@ -1,0 +1,158 @@
+AncId, Desc1, Desc2, Branch Length 1, Branch Length 2
+159, ASV 597 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloropicon Chloropicon sieburthii, ASV 1388 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloropicon Chloropicon roscoffensis, 0.0000000000, 0.0000000000
+160, ASV 465 Root Eukaryota Stramenopiles Ochrophyta Bolidophyceae Parmales Parmales env 3 Parmales env 3B Parmales env 3B sp., ASV 576 Root Eukaryota Stramenopiles Ochrophyta Bolidophyceae Parmales Parmales env 3 Parmales env 3A Parmales env 3A sp., 0.0000000000, 0.0000000000
+161, ASV 537 Root Eukaryota:nucl Hacrobia:nucl Cryptophyta:nucl Cryptophyceae:nucl Cryptomonadales:nucl Hemiselmidaceae:nucl Hemiselmis:nucl Hemiselmis sp.:nucl, ASV 1054 Root Eukaryota:nucl Hacrobia:nucl Cryptophyta:nucl Cryptophyceae:nucl Cryptomonadales:nucl Hemiselmidaceae:nucl Hemiselmis:nucl Hemiselmis sp.:nucl, 0.0000000000, 0.0000000000
+162, ASV 443 Root Eukaryota Archaeplastida Chlorophyta Chlorodendrophyceae Chlorodendrales Chlorodendraceae Chlorodendrales XX Chlorodendrales XX sp., ASV 577 Root Eukaryota Archaeplastida Chlorophyta Chlorodendrophyceae Chlorodendrales Chlorodendraceae Chlorodendrales XX Chlorodendrales XX sp., 0.0000000000, 0.0000000000
+163, ASV 910 Root Eukaryota Stramenopiles Ochrophyta Bolidophyceae Parmales Triparmaceae Triparma Triparma pacifica, ASV 1480 Root Eukaryota Stramenopiles Ochrophyta Bolidophyceae Parmales Triparmaceae Triparma Triparma laevis clade, 0.0000000000, 0.0000000000
+164, ASV 144 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Polar-centric-Mediophyceae Chaetoceros Chaetoceros tenuissimus, ASV 446 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Raphid-pennate Cylindrotheca Cylindrotheca closterium, 0.0000000000, 0.0000000000
+165, ASV 946 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Polar-centric-Mediophyceae Minidiscus Minidiscus variabilis, ASV 1152 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Polar-centric-Mediophyceae Minidiscus Minidiscus variabilis, 0.0000000000, 0.0000000000
+166, ASV 642 Root Eukaryota Stramenopiles Ochrophyta Dictyochophyceae Dictyochophyceae X Florenciellales Florenciella Florenciella parvula, ASV 1231 Root Eukaryota Stramenopiles Ochrophyta Dictyochophyceae Dictyochophyceae X Florenciellales Florenciella Florenciella parvula, 0.0000000000, 0.0000000000
+167, 166, ASV 1631 Root Eukaryota Stramenopiles Ochrophyta Dictyochophyceae Dictyochophyceae X Florenciellales Florenciellales X Florenciellales X sp., 0.0000000000, 0.0000000000
+168, 167, 161, 0.0000000000, 0.0000000000
+169, ASV 1295 Root Eukaryota Stramenopiles Ochrophyta Dictyochophyceae Dictyochophyceae X Florenciellales Florenciellales X Florenciellales X sp., ASV 2062 Root Eukaryota Stramenopiles Ochrophyta Dictyochophyceae Dictyochophyceae X Florenciellales Florenciellales X Florenciellales X sp., 0.0000000000, 0.0000000000
+170, ASV 314 Root Eukaryota Stramenopiles Ochrophyta Chrysophyceae Chrysophyceae X Chrysophyceae Clade-H Chrysophyceae Clade-H X Chrysophyceae Clade-H X sp., ASV 535 Root Eukaryota Stramenopiles Ochrophyta Chrysophyceae Chrysophyceae X Chrysophyceae Clade-H Chrysophyceae Clade-H X Chrysophyceae Clade-H X sp., 0.0000000000, 0.0000000000
+171, ASV 10 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Bathycoccaceae Bathycoccus Bathycoccus prasinos, ASV 14 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Bathycoccaceae Bathycoccus Bathycoccus prasinos, 0.0000000000, 0.0000000000
+172, ASV 13 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Bathycoccaceae Bathycoccus Bathycoccus prasinos, 171, 0.0000000000, 0.0000000000
+173, ASV 116 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadales clade B Pelagomonadales clade B1 Pelagomonadales clade B1 sp., ASV 157 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadales clade B Pelagomonadales clade B1 Pelagomonadales clade B1 sp., 0.0000000000, 0.0000000000
+174, ASV 1164 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadaceae Pelagomonadaceae clade C Pelagomonadaceae clade C sp., ASV 1347 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadaceae Pelagomonadaceae clade C Pelagomonadaceae clade C sp., 0.0000000000, 0.0000000000
+175, ASV 2 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Bathycoccaceae Ostreococcus Ostreococcus lucimarinus, ASV 52 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Bathycoccaceae Ostreococcus Ostreococcus lucimarinus, 0.0000000000, 0.0000000000
+176, ASV 1092 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadaceae Pelagomonas Pelagomonas calceolata, ASV 1403 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadaceae Pelagomonas Pelagomonas calceolata, 0.0000000000, 0.0000000000
+177, ASV 1171 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Polar-centric-Mediophyceae Thalassiosira NA, ASV 1249 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Polar-centric-Mediophyceae NA NA, 0.0000000000, 0.0000000000
+178, ASV 985 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Polar-centric-Mediophyceae Thalassiosira NA, 177, 0.0000000000, 0.0000000000
+179, ASV 83 Root Eukaryota Hacrobia Cryptophyta Cryptophyceae Cryptomonadales Cryptomonadales X Teleaulax Teleaulax sp., ASV 112 Root Eukaryota Hacrobia Cryptophyta Cryptophyceae Cryptomonadales Cryptomonadales X Teleaulax Teleaulax sp., 0.0000000000, 0.0000000000
+180, ASV 118 Root Eukaryota Hacrobia Cryptophyta Cryptophyceae Cryptomonadales Cryptomonadales X Teleaulax Teleaulax sp., 179, 0.0000000000, 0.0000000000
+181, ASV 906 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Mamiellaceae Micromonas Micromonas pusilla, ASV 1363 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Mamiellaceae Micromonas Micromonas pusilla, 0.0000000000, 0.0000000000
+182, ASV 205 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadaceae Aureococcus Aureococcus anophagefferens, ASV 298 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadaceae Aureococcus Aureococcus anophagefferens, 0.0000000000, 0.0000000000
+183, 162, ASV 71 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Polar-centric-Mediophyceae Chaetoceros Chaetoceros debilis, 0.0000000000, 0.0000000000
+184, 170, ASV 471 Root Eukaryota Stramenopiles Ochrophyta Chrysophyceae Chrysophyceae X Chrysophyceae Clade-H Chrysophyceae Clade-H X Chrysophyceae Clade-H X sp., 0.0000000000, 0.0000000000
+185, ASV 1560 Root Eukaryota Hacrobia Cryptophyta Cryptophyceae Pyrenomonadales Pyrenomonadaceae Rhodomonas Rhodomonas sp., ASV 2201 Root Eukaryota Hacrobia Cryptophyta Cryptophyceae Pyrenomonadales Pyrenomonadaceae Rhodomonas Rhodomonas sp., 0.0000000000, 0.0000000000
+186, ASV 1907 Root Eukaryota Hacrobia Cryptophyta Cryptophyceae Pyrenomonadales Pyrenomonadaceae Rhodomonas Rhodomonas sp., 185, 0.0000000000, 0.0000000000
+187, ASV 38 Root Eukaryota Hacrobia Haptophyta Prymnesiophyceae Phaeocystales Phaeocystaceae Phaeocystis Phaeocystis globosa, ASV 58 Root Eukaryota Hacrobia Haptophyta Prymnesiophyceae Phaeocystales Phaeocystaceae Phaeocystis Phaeocystis globosa, 0.0000000000, 0.0000000000
+188, ASV 49 Root Eukaryota Hacrobia Haptophyta Prymnesiophyceae Phaeocystales Phaeocystaceae Phaeocystis Phaeocystis globosa, 187, 0.0000000000, 0.0000000000
+189, ASV 1436 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Mamiellaceae Micromonas Micromonas bravo B2, 172, 0.0000000000, 0.0000000000
+190, ASV 736 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Mamiellaceae Micromonas Micromonas pusilla, ASV 885 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Mamiellaceae Micromonas Micromonas pusilla, 0.0000000000, 0.0000000000
+191, 190, 181, 0.0000000000, 0.0000000000
+192, ASV 1862 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Dolichomastigales Crustomastigaceae Crustomastigaceae X Crustomastigaceae X sp., ASV 1997 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Dolichomastigales Crustomastigaceae Crustomastigaceae X Crustomastigaceae X sp., 0.0000000000, 0.0000000000
+193, ASV 2098 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Dolichomastigales Crustomastigaceae Crustomastigaceae X Crustomastigaceae X sp., 192, 0.0000000000, 0.0000000000
+194, ASV 323 Root Eukaryota Hacrobia Haptophyta Prymnesiophyceae Prymnesiales Chrysochromulinaceae Chrysochromulina Chrysochromulina sp., ASV 455 Root Eukaryota Hacrobia Haptophyta Prymnesiophyceae Prymnesiales Prymnesiaceae Haptolina Haptolina sp., 0.0000000000, 0.0000000000
+195, ASV 413 Root Eukaryota Hacrobia Katablepharidophyta Katablepharidaceae Katablepharidales Katablepharidales X Leucocryptos Leucocryptos marina, ASV 539 Root Eukaryota Hacrobia Katablepharidophyta Katablepharidaceae Katablepharidales Katablepharidales X Leucocryptos Leucocryptos marina, 0.0000000000, 0.0000000000
+196, ASV 783 Root Eukaryota Hacrobia Katablepharidophyta Katablepharidaceae Katablepharidales Katablepharidales X Leucocryptos Leucocryptos marina, 195, 0.0000000000, 0.0000000000
+197, ASV 30 Root Eukaryota Archaeplastida Chlorophyta Trebouxiophyceae Chlorellales Chlorellales X Picochlorum Picochlorum sp., ASV 51 Root Eukaryota Archaeplastida Chlorophyta Trebouxiophyceae Chlorellales Chlorellales X Picochlorum Picochlorum sp., 0.0000000000, 0.0000000000
+198, ASV 59 Root Eukaryota Archaeplastida Chlorophyta Trebouxiophyceae Chlorellales Chlorellales X Picochlorum Picochlorum sp., 197, 0.0000000000, 0.0000000000
+199, 159, 198, 0.0000000000, 0.0000000000
+200, ASV 66 Root Eukaryota Hacrobia Cryptophyta Cryptophyceae Cryptomonadales Cryptomonadales X Teleaulax Teleaulax gracilis, ASV 99 Root Eukaryota Hacrobia Cryptophyta Cryptophyceae Cryptomonadales Cryptomonadales X Teleaulax Teleaulax gracilis, 0.0000000000, 0.0000000000
+201, ASV 89 Root Eukaryota Hacrobia Cryptophyta Cryptophyceae Cryptomonadales Cryptomonadales X Teleaulax Teleaulax gracilis, 200, 0.0000000000, 0.0000000000
+202, ASV 218 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Radial-centric-basal-Coscinodiscophyceae Guinardia Guinardia delicatula, ASV 274 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Radial-centric-basal-Coscinodiscophyceae Guinardia Guinardia delicatula, 0.0000000000, 0.0000000000
+203, 202, ASV 3445 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Radial-centric-basal-Coscinodiscophyceae Guinardia Guinardia solstherfothii, 0.0000000000, 0.0000000000
+204, ASV 353 Root Eukaryota Hacrobia Haptophyta Prymnesiophyceae Prymnesiales Chrysochromulinaceae Chrysochromulina Chrysochromulina sp., ASV 606 Root Eukaryota Hacrobia Haptophyta Prymnesiophyceae Prymnesiales Chrysochromulinaceae Chrysochromulina Chrysochromulina sp., 0.0000000000, 0.0000000000
+205, ASV 235 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Dolichomastigales Crustomastigaceae Crustomastigaceae X Crustomastigaceae X sp., 193, 0.0000000000, 0.0000000000
+206, 183, 205, 0.0000000000, 0.0000000000
+207, ASV 725 Root Eukaryota Stramenopiles Ochrophyta Chrysophyceae Chrysophyceae X Chrysophyceae Clade-H Chrysophyceae Clade-H X Chrysophyceae Clade-H X sp., ASV 1218 Root Eukaryota Stramenopiles Ochrophyta Chrysophyceae Chrysophyceae X Chrysophyceae Clade-H Chrysophyceae Clade-H X Chrysophyceae Clade-H X sp., 0.0000000000, 0.0000000000
+208, ASV 1364 Root Eukaryota Stramenopiles Ochrophyta Chrysophyceae Chrysophyceae X Chrysophyceae Clade-H Chrysophyceae Clade-H X Chrysophyceae Clade-H X sp., 207, 0.0000000000, 0.0000000000
+209, ASV 3447 Root Eukaryota Stramenopiles Ochrophyta Chrysophyceae Chrysophyceae X Chrysophyceae Clade-H Chrysophyceae Clade-H X Chrysophyceae Clade-H X sp., 208, 0.0000000000, 0.0000000000
+210, 184, 209, 0.0000000000, 0.0000000000
+211, ASV 2990 Root Eukaryota Stramenopiles Ochrophyta Chrysophyceae Chrysophyceae X Chrysophyceae Clade-H Chrysophyceae Clade-H X Chrysophyceae Clade-H X sp., 210, 0.0000000000, 0.0000000000
+212, ASV 412 Root Eukaryota Stramenopiles Ochrophyta Chrysophyceae Chrysophyceae X Chrysophyceae Clade-F Paraphysomonas Paraphysomonas imperforata, 211, 0.0000000000, 0.0000000000
+213, ASV 82 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadales clade B Pelagomonadales clade B1 Pelagomonadales clade B1 sp., ASV 106 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadales clade B Pelagomonadales clade B1 Pelagomonadales clade B1 sp., 0.0000000000, 0.0000000000
+214, 213, 173, 0.0000000000, 0.0000000000
+215, ASV 18 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Radial-centric-basal-Coscinodiscophyceae Rhizosolenia Rhizosolenia delicatula, ASV 28 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Radial-centric-basal-Coscinodiscophyceae Rhizosolenia Rhizosolenia delicatula, 0.0000000000, 0.0000000000
+216, 215, ASV 2520 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Radial-centric-basal-Coscinodiscophyceae Rhizosolenia Rhizosolenia delicatula, 0.0000000000, 0.0000000000
+217, 216, 163, 0.0000000000, 0.0000000000
+218, 217, ASV 2113 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Radial-centric-basal-Coscinodiscophyceae Rhizosolenia Rhizosolenia imbricata, 0.0000000000, 0.0000000000
+219, 218, ASV 806 Root Eukaryota:nucl Hacrobia:nucl Cryptophyta:nucl Cryptophyceae:nucl Cryptomonadales:nucl Hemiselmidaceae:nucl Hemiselmis:nucl Hemiselmis sp.:nucl, 0.0000000000, 0.0000000000
+220, 219, 160, 0.0000000000, 0.0000000000
+221, ASV 835 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadaceae Pelagomonas Pelagomonas calceolata, ASV 1091 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadaceae Pelagomonas Pelagomonas calceolata, 0.0000000000, 0.0000000000
+222, 221, 176, 0.0000000000, 0.0000000000
+223, ASV 4 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Bathycoccaceae Ostreococcus Ostreococcus lucimarinus, ASV 63 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Bathycoccaceae Ostreococcus Ostreococcus lucimarinus, 0.0000000000, 0.0000000000
+224, ASV 382 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloroparvula Chloroparvula pacifica, ASV 501 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloroparvula Chloroparvula pacifica, 0.0000000000, 0.0000000000
+225, ASV 668 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadaceae Pelagomonadaceae clade C Pelagomonadaceae clade C sp., ASV 1004 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadaceae Pelagomonadaceae clade C Pelagomonadaceae clade C sp., 0.0000000000, 0.0000000000
+226, 225, 174, 0.0000000000, 0.0000000000
+227, ASV 1153 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Mamiellaceae Micromonas Micromonas bravo B2, 189, 0.0000000000, 0.0000000000
+228, ASV 1173 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Mamiellaceae Micromonas Micromonas bravo B2, 227, 0.0000000000, 0.0000000000
+229, ASV 152 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadaceae Aureococcus Aureococcus anophagefferens, ASV 193 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadaceae Aureococcus Aureococcus anophagefferens, 0.0000000000, 0.0000000000
+230, 229, 182, 0.0000000000, 0.0000000000
+231, 214, 230, 0.0000000000, 0.0000000000
+232, 226, 231, 0.0000000000, 0.0000000000
+233, ASV 26 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Mamiellaceae Micromonas Micromonas bravo B1, 228, 0.0000000000, 0.0000000000
+234, ASV 15 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Mamiellaceae Micromonas Micromonas bravo B1, 233, 0.0000000000, 0.0000000000
+235, ASV 23 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Mamiellaceae Micromonas Micromonas bravo B1, 234, 0.0000000000, 0.0000000000
+236, ASV 167 Root Eukaryota Hacrobia Katablepharidophyta Katablepharidaceae Katablepharidales Katablepharidales X Katablepharidales XX Katablepharidales XX sp., ASV 255 Root Eukaryota Hacrobia Katablepharidophyta Katablepharidaceae Katablepharidales Katablepharidales X Katablepharidales XX Katablepharidales XX sp., 0.0000000000, 0.0000000000
+237, 236, ASV 276 Root Eukaryota Hacrobia Katablepharidophyta Katablepharidaceae Katablepharidales Katablepharidales X Katablepharidales XX Katablepharidales XX sp., 0.0000000000, 0.0000000000
+238, 237, 196, 0.0000000000, 0.0000000000
+239, 238, 199, 0.0000000000, 0.0000000000
+240, 165, 178, 0.0000000000, 0.0000000000
+241, ASV 192 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloroparvula Chloroparvula pacifica, ASV 300 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloroparvula Chloroparvula pacifica, 0.0000000000, 0.0000000000
+242, ASV 252 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloroparvula Chloroparvula pacifica, 241, 0.0000000000, 0.0000000000
+243, ASV 31 Root Eukaryota Hacrobia Cryptophyta Cryptophyceae Cryptomonadales Cryptomonadales X Plagioselmis Plagioselmis prolonga, ASV 44 Root Eukaryota Hacrobia Cryptophyta Cryptophyceae Cryptomonadales Cryptomonadales X Plagioselmis Plagioselmis prolonga, 0.0000000000, 0.0000000000
+244, 243, ASV 50 Root Eukaryota Hacrobia Cryptophyta Cryptophyceae Cryptomonadales Cryptomonadales X Plagioselmis Plagioselmis prolonga, 0.0000000000, 0.0000000000
+245, 244, 201, 0.0000000000, 0.0000000000
+246, 245, ASV 2601 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloroparvula Chloroparvula B3 sp., 0.0000000000, 0.0000000000
+247, 246, 235, 0.0000000000, 0.0000000000
+248, ASV 21 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Mamiellaceae Micromonas Micromonas commoda A2, ASV 33 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Mamiellaceae Micromonas Micromonas commoda A2, 0.0000000000, 0.0000000000
+249, ASV 37 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Mamiellaceae Micromonas Micromonas commoda A2, 248, 0.0000000000, 0.0000000000
+250, 191, 249, 0.0000000000, 0.0000000000
+251, 250, 186, 0.0000000000, 0.0000000000
+252, ASV 1312 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Polar-centric-Mediophyceae Brockmanniella Brockmanniella brockmannii, ASV 1431 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Polar-centric-Mediophyceae Brockmanniella Brockmanniella brockmannii, 0.0000000000, 0.0000000000
+253, 252, ASV 2680 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Polar-centric-Mediophyceae Brockmanniella Brockmanniella brockmannii, 0.0000000000, 0.0000000000
+254, ASV 94 Root Eukaryota Archaeplastida Chlorophyta Pyramimonadophyceae Pseudoscourfieldiales Pycnococcaceae Pycnococcaceae X Pycnococcaceae X sp., ASV 140 Root Eukaryota Archaeplastida Chlorophyta Pyramimonadophyceae Pseudoscourfieldiales Pycnococcaceae Pycnococcaceae X Pycnococcaceae X sp., 0.0000000000, 0.0000000000
+255, 254, ASV 84 Root Eukaryota Archaeplastida Chlorophyta Pyramimonadophyceae Pseudoscourfieldiales Pycnococcaceae Pycnococcaceae X Pycnococcaceae X sp., 0.0000000000, 0.0000000000
+256, 255, ASV 60 Root Eukaryota Archaeplastida Chlorophyta Pyramimonadophyceae Pseudoscourfieldiales Pycnococcaceae Pycnococcaceae X Pycnococcaceae X sp., 0.0000000000, 0.0000000000
+257, 256, ASV 2202 Root Eukaryota Archaeplastida Chlorophyta Pyramimonadophyceae Pyramimonadales Pyramimonadaceae Pyramimonas NA, 0.0000000000, 0.0000000000
+258, 257, 164, 0.0000000000, 0.0000000000
+259, ASV 126 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Polar-centric-Mediophyceae Detonula Detonula pumila, ASV 131 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Polar-centric-Mediophyceae Thalassiosira Thalassiosira tenera, 0.0000000000, 0.0000000000
+260, ASV 502 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadaceae Pelagomonadaceae clade D1 Pelagomonadaceae clade D1 sp., ASV 593 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadaceae NA NA, 0.0000000000, 0.0000000000
+261, 260, ASV 633 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadaceae Pelagomonadaceae clade D1 Pelagomonadaceae clade D1 sp., 0.0000000000, 0.0000000000
+262, ASV 510 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloroparvula Chloroparvula pacifica, ASV 722 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloroparvula Chloroparvula pacifica, 0.0000000000, 0.0000000000
+263, 259, ASV 1166 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Polar-centric-Mediophyceae Thalassiosira NA, 0.0000000000, 0.0000000000
+264, ASV 499 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloroparvula Chloroparvula pacifica, ASV 690 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloroparvula Chloroparvula pacifica, 0.0000000000, 0.0000000000
+265, 224, 264, 0.0000000000, 0.0000000000
+266, ASV 40 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadaceae Pelagomonas Pelagomonas calceolata, ASV 62 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadaceae Pelagomonas Pelagomonas calceolata, 0.0000000000, 0.0000000000
+267, ASV 181 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloropicon Chloropicon laureae, 265, 0.0000000000, 0.0000000000
+268, ASV 77 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Polar-centric-Mediophyceae Minutocellus Minutocellus polymorphus, ASV 109 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Polar-centric-Mediophyceae NA NA, 0.0000000000, 0.0000000000
+269, 268, ASV 115 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Polar-centric-Mediophyceae Minutocellus Minutocellus polymorphus, 0.0000000000, 0.0000000000
+270, 220, 212, 0.0000000000, 0.0000000000
+271, ASV 969 Root Eukaryota Stramenopiles Ochrophyta Bacillariophyta Bacillariophyta X Polar-centric-Mediophyceae Thalassiosira Thalassiosira rotula, 240, 0.0000000000, 0.0000000000
+272, 263, 271, 0.0000000000, 0.0000000000
+273, 253, 272, 0.0000000000, 0.0000000000
+274, 269, 273, 0.0000000000, 0.0000000000
+275, 203, 274, 0.0000000000, 0.0000000000
+276, 258, 206, 0.0000000000, 0.0000000000
+277, ASV 404 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloroparvula Chloroparvula pacifica, ASV 452 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloroparvula Chloroparvula pacifica, 0.0000000000, 0.0000000000
+278, 277, 262, 0.0000000000, 0.0000000000
+279, 175, ASV 35 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Bathycoccaceae Ostreococcus Ostreococcus lucimarinus, 0.0000000000, 0.0000000000
+280, 279, ASV 1 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Bathycoccaceae Ostreococcus Ostreococcus lucimarinus, 0.0000000000, 0.0000000000
+281, 280, 223, 0.0000000000, 0.0000000000
+282, 281, ASV 359 Root Eukaryota Archaeplastida Chlorophyta Mamiellophyceae Mamiellales Bathycoccaceae Ostreococcus Ostreococcus lucimarinus, 0.0000000000, 0.0000000000
+283, 282, 247, 0.0000000000, 0.0000000000
+284, 251, 283, 0.0000000000, 0.0000000000
+285, 270, 275, 0.0000000000, 0.0000000000
+286, 222, ASV 53 Root Eukaryota Stramenopiles Ochrophyta Pelagophyceae Pelagomonadales Pelagomonadaceae Pelagomonas Pelagomonas calceolata, 0.0000000000, 0.0000000000
+287, 286, 266, 0.0000000000, 0.0000000000
+288, 287, 232, 0.0000000000, 0.0000000000
+289, 261, 288, 0.0000000000, 0.0000000000
+290, 169, 289, 0.0000000000, 0.0000000000
+291, 168, 290, 0.0000000000, 0.0000000000
+292, 285, 291, 0.0000000000, 0.0000000000
+293, 292, 180, 0.0000000000, 0.0000000000
+294, ASV 1241 Root Eukaryota Hacrobia Haptophyta Prymnesiophyceae Prymnesiales Chrysochromulinaceae Chrysochromulina Chrysochromulina sp., ASV 1694 Root Eukaryota Hacrobia Haptophyta Prymnesiophyceae Prymnesiales Chrysochromulinaceae Chrysochromulina Chrysochromulina sp., 0.0000000000, 0.0000000000
+295, 204, 294, 0.0000000000, 0.0000000000
+296, 295, ASV 872 Root Eukaryota Hacrobia Haptophyta Prymnesiophyceae Prymnesiales Chrysochromulinaceae Chrysochromulina Chrysochromulina sp., 0.0000000000, 0.0000000000
+297, 296, 194, 0.0000000000, 0.0000000000
+298, 297, 188, 0.0000000000, 0.0000000000
+299, ASV 65 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloroparvula Chloroparvula pacifica, ASV 86 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloroparvula Chloroparvula pacifica, 0.0000000000, 0.0000000000
+300, ASV 48 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloroparvula Chloroparvula pacifica, ASV 78 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloroparvula Chloroparvula pacifica, 0.0000000000, 0.0000000000
+301, ASV 56 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloroparvula Chloroparvula pacifica, 278, 0.0000000000, 0.0000000000
+302, 298, ASV 1254 Root Eukaryota Hacrobia Haptophyta Prymnesiophyceae Prymnesiophyceae Clade D Prymnesiophyceae Clade D X Prymnesiophyceae Clade D XX Prymnesiophyceae Clade D XX sp., 0.0000000000, 0.0000000000
+303, ASV 29 Root Eukaryota Archaeplastida Chlorophyta Chloropicophyceae Chloropicales Chloropicaceae Chloroparvula Chloroparvula pacifica, 301, 0.0000000000, 0.0000000000
+304, 302, ASV 834 Root Eukaryota Hacrobia Haptophyta Prymnesiophyceae Prymnesiales Chrysochromulinaceae Chrysochromulina Chrysochromulina sp., 0.0000000000, 0.0000000000
+305, 304, ASV 1405 Root Eukaryota Hacrobia Haptophyta Prymnesiophyceae Prymnesiales Chrysochromulinaceae Chrysochromulina Chrysochromulina sp., 0.0000000000, 0.0000000000
+306, 305, ASV 1317 Root Eukaryota Hacrobia Haptophyta Prymnesiophyceae Prymnesiales Chrysochromulinaceae Chrysochromulina Chrysochromulina sp., 0.0000000000, 0.0000000000
+307, 306, 276, 0.0000000000, 0.0000000000
+308, 239, 307, 0.0000000000, 0.0000000000
+309, 293, 308, 0.0000000000, 0.0000000000
+310, 309, 284, 0.0000000000, 0.0000000000
+311, 310, 267, 0.0000000000, 0.0000000000
+312, 311, 242, 0.0000000000, 0.0000000000
+313, 299, 303, 0.0000000000, 0.0000000000
+314, 312, 313, 0.0000000000, 0.0000000000
+315, 314, 300, 0.0000000000, 0.0000000000
