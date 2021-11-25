@@ -1,4 +1,4 @@
-"";dada2_input;filtered;dada_Fw;dada_Rv;merged;nonchim;final_perc_reads_retained
+;dada2_input;filtered;dada_Fw;dada_Rv;merged;nonchim;final_perc_reads_retained
 "C1_2017.04";96038;72255;71848;71630;67589;55733;58
 "C1_2018.02";87144;74187;73386;72982;69291;58993;67,7
 "C1_2018.04";73976;62715;61634;61522;55601;41815;56,5
