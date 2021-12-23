@@ -29,12 +29,33 @@ rltv.Otu.Table <- function(x){
 
 ShaASVs <- read.csv2("https://raw.githubusercontent.com/cmlglvz/datasets/master/Data/eAnalisis/ShaASVs.csv", header = TRUE, sep = ";", dec = ".", row.names = 1, skip = 0, fill = TRUE)
 ShaTXs <- read.csv2("https://raw.githubusercontent.com/cmlglvz/datasets/master/Data/eAnalisis/ShaTXs.csv", header = TRUE, sep = ";", dec = ".", row.names = 1, skip = 0, fill = TRUE)
+ShaRAs <- as.data.frame(t(ShaASVs))
+ShaRAs <- mutate(ShaRAs, 
+                 Cha = rowSums(ShaRAs[1:12]), 
+                 Fla = rowSums(ShaRAs[13:24]), 
+                 Hu = rowSums(ShaRAs[25:36]), 
+                 Pc = rowSums(ShaRAs[37:41]), 
+                 Total = rowSums(ShaRAs[1:41])
+                 )
+sRAs <- ShaRAs[, c(42:45)]
+sRAs <- rltv.Otu.Table(sRAs)
+sRAs <- apply(sRAs, 2, function(x) x * 100) %>% as.data.frame()
+sRAs <- as.data.frame(t(sRAs))
 
 ChlTXs <- filter(ShaTXs, Division == "Chlorophyta")
-ChlASVs <- select(ShaASVs, all_of(ChlTXs$Seq))
-colnames(ChlASVs) <- ChlTXs$OTU
-raChl <- rltv.Otu.Table(ChlASVs)
-aChl <- mutate(ChlASVs, Site = as.factor(c(rep("Cha", 12), rep("Fla", 12), rep("Hu", 12), rep("Pc", 5))), .before = "ASV_1")
+ChlRAs <- select(ShaRAs, all_of(ChlTXs$Seq))
+colnames(ChlRAs) <- ChlTXs$OTU
+trying <- as.data.frame(t(ChlRAs))
+trying <- mutate(trying, 
+                 Cha = rowSums(trying[1:12]), 
+                 Fla = rowSums(trying[13:24]), 
+                 Hu = rowSums(trying[25:36]), 
+                 Pc = rowSums(trying[37:41]), 
+                 Total = rowSums(trying[1:41])
+                 )
+aChl <- mutate(ChlRAs, Muestra = rownames(ChlRAs), 
+               Site = as.factor(c(rep("Cha", 12), rep("Fla", 12), rep("Hu", 12), rep("Pc", 5))), 
+               .before = "ASV_1")
 
 OchTXs <- filter(ShaTXs, Division == "Ochrophyta")
 OchASVs <- select(ShaASVs, all_of(OchTXs$Seq))
@@ -51,7 +72,7 @@ CKASVs <- select(ShaASVs, all_of(CKTXs$Seq))
 colnames(CKASVs) <- CKTXs$OTU
 CKASVs <- mutate(CKASVs, Site = as.factor(c(rep("Cha", 12), rep("Fla", 12), rep("Hu", 12), rep("Pc", 5))), .before = "ASV_31")
 
-bChl <- melt(aChl, id = "Site")
+bChl <- gather(aChl, key = "OTU", value = "Rel.Abun", -c(1, 2))
 ggChl <- ggplot(bChl, aes(x = variable, y = value, fill = Site)) + 
   geom_boxplot() + 
   scale_fill_viridis(discrete = TRUE, alpha = 0.6) + 
