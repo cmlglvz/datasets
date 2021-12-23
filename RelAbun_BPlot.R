@@ -29,6 +29,7 @@ rltv.Otu.Table <- function(x){
 
 ShaASVs <- read.csv2("https://raw.githubusercontent.com/cmlglvz/datasets/master/Data/eAnalisis/ShaASVs.csv", header = TRUE, sep = ";", dec = ".", row.names = 1, skip = 0, fill = TRUE)
 ShaTXs <- read.csv2("https://raw.githubusercontent.com/cmlglvz/datasets/master/Data/eAnalisis/ShaTXs.csv", header = TRUE, sep = ";", dec = ".", row.names = 1, skip = 0, fill = TRUE)
+colnames(ShaASVs) <- ShaTXs$OTU
 ShaRAs <- as.data.frame(t(ShaASVs))
 ShaRAs <- mutate(ShaRAs, 
                  Cha = rowSums(ShaRAs[1:12]), 
@@ -43,19 +44,35 @@ sRAs <- apply(sRAs, 2, function(x) x * 100) %>% as.data.frame()
 sRAs <- as.data.frame(t(sRAs))
 
 ChlTXs <- filter(ShaTXs, Division == "Chlorophyta")
-ChlRAs <- select(ShaRAs, all_of(ChlTXs$Seq))
-colnames(ChlRAs) <- ChlTXs$OTU
-trying <- as.data.frame(t(ChlRAs))
-trying <- mutate(trying, 
-                 Cha = rowSums(trying[1:12]), 
-                 Fla = rowSums(trying[13:24]), 
-                 Hu = rowSums(trying[25:36]), 
-                 Pc = rowSums(trying[37:41]), 
-                 Total = rowSums(trying[1:41])
-                 )
-aChl <- mutate(ChlRAs, Muestra = rownames(ChlRAs), 
-               Site = as.factor(c(rep("Cha", 12), rep("Fla", 12), rep("Hu", 12), rep("Pc", 5))), 
-               .before = "ASV_1")
+Chl_I <- filter(ChlTXs, Class == "Mamiellophyceae")
+Chl_II <- filter(ChlTXs, Class == "Chloropicophyceae" | Class == "Trebouxiophyceae" | Class == "Pyramimonadophyceae" | Class == "Chlorodendrophyceae")
+fChl_I <- filter(Chl_I, Genus == "Micromonas")
+sChl_I <- filter(Chl_I, Genus == "Ostreococcus" | Genus == "Bathycoccus" | Genus == "Crustomastigaceae_X")
+fIRAs <- select(sRAs, fChl_I$OTU)
+fIRAs <- as.data.frame(t(fIRAs))
+afChlI <- mutate(fIRAs, 
+                 OTU = rownames(fIRAs), 
+                 .before = "Cha")
+bfChlI <- gather(afChlI, key = "Site", value = "RAbund", -1)
+fChlIgg <- ggplot(bfChlI, aes(x = OTU, y = RAbund, fill = Site)) + 
+  geom_boxplot() + 
+  scale_fill_viridis(discrete = TRUE, alpha = 1) + 
+  geom_jitter(color = "grey", size = 0.4, alpha = 0.9) + 
+  theme_ipsum() + 
+  theme(
+    legend.position = "right", 
+    plot.title = element_text(size = 11)
+    ) + 
+  ggtitle("Chlorophyta relative abundance") +
+  xlab("")
+vln <- bfChlI %>% 
+  ggplot(aes(fill = Site, y = RAbund, x = OTU)) + 
+  geom_violin(position = "dodge", alpha = 0.8, outlier.colour = "transparent") + 
+  scale_fill_viridis(discrete = TRUE, name = "") + 
+  theme_ipsum()  +
+  xlab("") +
+  ylab("Relative Abundance (%)")
+vln
 
 OchTXs <- filter(ShaTXs, Division == "Ochrophyta")
 OchASVs <- select(ShaASVs, all_of(OchTXs$Seq))
@@ -86,7 +103,7 @@ ggChl <- ggplot(bChl, aes(x = variable, y = value, fill = Site)) +
   xlab("")
 ggChl
 
-gg <- ggplot(bChl, aes(x = variable, y = value, fill = Site)) + 
+gg <- ggplot(bfChlI, aes(x = Site, y = RAbund, fill = OTU)) + 
   geom_boxplot(colour = "black", position = position_dodge(0.5)) + 
   geom_vline(xintercept = c(1.5,2.5,3.5), colour = "grey85", size = 1.2) +
   theme(legend.title = element_text(size = 12, face = "bold"), 
@@ -97,7 +114,7 @@ gg <- ggplot(bChl, aes(x = variable, y = value, fill = Site)) +
         panel.background = element_blank(), 
         panel.border = element_rect(fill = NA, colour = "black"), 
         legend.key=element_blank()) + 
-  labs(x= "", y = "Relative Abundance (%)", fill = "Site") + 
+  labs(x= "", y = "Relative Abundance (%)", fill = "OTU") + 
   scale_fill_viridis(discrete = TRUE, alpha = 0.6, option = "D")
 gg
 
