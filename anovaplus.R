@@ -4,6 +4,8 @@ library(BiodiversityR)
 library(ggvegan)
 library(ggpubr)
 library(ggfortify)
+library(pvclust)
+library(clustsig)
 
 metal <- read.csv2("https://raw.githubusercontent.com/cmlglvz/datasets/master/Data/eAnalisis/shASVs.csv", header = TRUE, sep = ";", dec = ".", skip = 0, fill = TRUE)
 metal <- mutate(metal, 
@@ -50,10 +52,86 @@ summary(cu.sim)
 plot(cu.sim)
 fe.sim <- anosim(metal.dist, Iron)
 
-pca <- rda(metal.env[,c(3,5)])
-summary(pca)
-autoplot(pca, arrows = TRUE)
+#NMDS
+metal.hel <- decostand(metal, method = "hellinger")
+nmds1 <- metaMDS(metal.hel, autotransform = FALSE)
+ordiplot(nmds1, type = "t")
+autoplot(nmds1)
+fort <- fortify(nmds1)
+p1 <- ggplot() +
+  geom_point(data = subset(fort, Score == 'sites'),
+             mapping = aes(x = NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0.5) +
+  geom_segment(data = subset(fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0,
+               alpha = 0) +
+  geom_text(data = subset(fort, Score == 'species'),
+            mapping = aes(label = Label, x = NMDS1 * 1.1, y = NMDS2 * 1.1),
+            alpha = 0) +
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"))
 
-rda <- rda(metal~Copper+Iron, data = metal.env)
-rda
-ordiplot(rda, type = "text")
+p2 <- ggplot() +
+  geom_point(data = subset(fort, Score == 'sites'),
+             mapping = aes(x = NMDS1, y = NMDS2),
+             colour = "black",
+             alpha = 0) +
+  geom_segment(data = subset(fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0.8) +
+  geom_text(data = subset(fort, Score == 'species'),
+            mapping = aes(label = Label, x = NMDS1 * 1.1, y = NMDS2 * 1.1)) +
+  
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"))
+ggarrange(p1, p2, ncol = 1)
+
+summary(metal.env)
+adonis(metal ~ Site, data = metal.env)
+p3 <- ggplot() +
+  geom_point(data = subset(fort, Score == 'sites'),
+             mapping = aes(x = NMDS1, y = NMDS2, colour = metal.env$Site),
+             alpha = 0.5) +
+  geom_segment(data = subset(fort, Score == 'species'),
+               mapping = aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.015, "npc"),
+                             type = "closed"),
+               colour = "darkgray",
+               size = 0,
+               alpha = 0) +
+  geom_text(data = subset(fort, Score == 'species'),
+            mapping = aes(label = Label, x = NMDS1 * 1.1, y = NMDS2 * 1.1),
+            alpha = 0) +
+  geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.8, colour = "gray") +
+  geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        legend.position = c(0.8, 0.2)) +
+  scale_color_discrete("Site")
+ggarrange(p3, p2, ncol = 1)
+
+menv <- metal.env %>% mutate_at(c("Vanadium", "Iron", "Niquel", "Copper", "Zinc", "Molybdenum"), ~(scale(.)))
+menv
+cufe <- menv[, c(3,5)]
+tcufe <- as.data.frame(t(cufe))
+clstr <- pvclust(tcufe, method.hclust = "complete", method.dist = "correlation", nboot = 1000, parallel = TRUE)
+clust <- hclust(cufe, method = "complete")
+
