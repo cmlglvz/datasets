@@ -134,4 +134,12 @@ cufe <- menv[, c(3,5)]
 tcufe <- as.data.frame(t(cufe))
 clstr <- pvclust(tcufe, method.hclust = "complete", method.dist = "correlation", nboot = 1000, parallel = TRUE)
 clust <- hclust(cufe, method = "complete")
+me.env <- metal.env[, c(3,5)]
+sp <- simprof(me.env, method.distance = "braycurtis")
+pl.color <- simprof.plot(sp)
+
+
+
+
+
 
