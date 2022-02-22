@@ -225,21 +225,15 @@ scores(nmds) %>% #funcion vegan similar al objeto anterior
   as_tibble(rownames = "Samples") %>% 
   inner_join(., lookup, by = "Samples") %>% 
   mutate(Cu.Level = if_else(Copper > 10, "Higher", "Lower")) %>% 
-  ggplot(aes(x = NMDS1, y = NMDS2, color = Cu.Level, size = Iron)) + 
-  geom_point(aes(shape = Site)) + 
+  ggplot(aes(x = NMDS1, y = NMDS2, color = Site, size = Iron)) + 
+  geom_point(aes(shape = Cu.Level)) + 
   coord_fixed() + 
   scale_color_manual(name = NULL, 
-                     breaks = c("Higher", "Lower"), 
-                     values = c("#D90429", "#34A0A4"), 
-                     labels = c("Higher Cu concentration", 
-                                "Lower Cu concentration")
-                     ) + 
-  scale_shape_manual(name = NULL, 
-                     breaks = c("Cha", "Fla", "Hu", "Pc"),
-                     values = c(0, 1, 2, 21), 
+                     breaks = c("Cha", "Fla", "Hu", "Pc"), 
+                     values = c("#0000B8", "#16DB93", "#F50000", "#65637E"), 
                      labels = c("Chañaral", 
                                 "Flamenco", 
                                 "Huasco", 
                                 "Punta de Choros")
                      ) + 
-  theme_minimal()
+  theme_classic()
