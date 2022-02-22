@@ -1,4 +1,6 @@
 library(tidyverse)
+library(treemap)
+library(d3treeR)
 
 Tax.sum <- function(OTU.Table, Tax.Table, Tax.lvl ){
   z <- NULL
@@ -164,72 +166,56 @@ barplot(t(relative.total),
         cex.axis = 0.9)
 dev.off()
 
+#Con tabla de abundancia total por phyla (div.tot) visualizaremos la contribución y distribución de todas las ASV de PPE
+cont.dist <- as.data.frame(t(div.tot))
+cont.dist <- cont.dist %>% 
+  mutate(Cha = rowSums(cont.dist[1:12]), 
+         Fla = rowSums(cont.dist[13:24]), 
+         Hu = rowSums(cont.dist[25:36]), 
+         Pc = rowSums(cont.dist[37:41]), 
+         Total = rowSums(cont.dist[1:41])
+         ) %>% 
+  mutate(Color = c("#440154", "#20A387", "#FFBE17", "#1C3B74", "#F94144", "#95D840")
+         ) %>% 
+  mutate(X = rownames(cont.dist), 
+         .before = "C1A17")
 
+tiff("Contribution_Distribution_Division_Total_PPE_ASV.tiff", width = 17, height = 15, units = 'in', res = 600)
+treemap(cont.dist, 
+        index = "X", 
+        vSize = "Total", 
+        type = "color",
+        vColor = "Color", 
+        position.legend = "none", 
+        fontsize.labels = 20,
+        fontsize.title = 30,
+        title = "Distribution and contribution of total PPE ASV",
+        title.legend = NA,
+        border.col = NA
+)
+dev.off()
 
-uShaDiv <- Tax.sum(uShaASVs, xTXs, 5) %>% as.data.frame()
-uShaDiv <- uShaDiv %>% rename(s.nuc = Cryptophyta)
-uShaDiv <- uShaDiv %>% 
-  mutate(Cryptophyta = rowSums(uShaDiv[c(3, 6)])) %>% 
-  select(Chlorophyta, Ochrophyta, Cryptophyta, Haptophyta, Katablepharidophyta)
-write.csv2(uShaDiv, file = "C:/Users/Camilo/Dropbox/R/eAnalisis/uShaDiv.csv")
-ShaASVs <- wASVs %>% select(all_of(Sha$Seq)) 
-ShaASVs <- ShaASVs %>% select(-all_of(uSha$Seq)) #Del total restamos las ASV únicas para el sitio, recordemos que no estan presentes únicamente en Chañaral, por eso presentan abundancia en otros sitios (muestras)
-ShaDiv <- Tax.sum(ShaASVs, xTXs, 5) %>% as.data.frame() %>% rename(s.nuc = Cryptophyta)
-ShaDiv <- ShaDiv %>% 
-  mutate(Cryptophyta = rowSums(ShaDiv[c(3, 6)])) %>% 
-  select(Chlorophyta, Ochrophyta, Cryptophyta, Haptophyta, Katablepharidophyta, Rhodophyta)
-write.csv2(ShaDiv, file = "C:/Users/Camilo/Dropbox/R/eAnalisis/ShaDiv.csv")
-MergedDiv <- ShaDiv %>% 
-  mutate(nChl = ShaDiv$Chlorophyta, 
-         sChl = uShaDiv$Chlorophyta, 
-         nOch = ShaDiv$Ochrophyta, 
-         sOch = uShaDiv$Ochrophyta, 
-         nCryp = ShaDiv$Cryptophyta, 
-         sCryp = uShaDiv$Cryptophyta, 
-         nHap = ShaDiv$Haptophyta,
-         sHap = uShaDiv$Haptophyta,
-         nKata = ShaDiv$Katablepharidophyta, 
-         sKata = uShaDiv$Katablepharidophyta, 
-         nRho = ShaDiv$Rhodophyta)
-MergedDiv <- MergedDiv[, -c(1:6)]
-MergedDiv <- rltv.Otu.Table(MergedDiv)
-apply(MergedDiv, 2, function(x) sum(x))[1:11]
-write.csv2(MergedDiv, file = "C:/Users/Camilo/Dropbox/R/eAnalisis/Relative_SharedMergedDiv.csv", na = "NA")
-rMergedDiv <- read.csv2("C:/Users/Camilo/Dropbox/R/eAnalisis/Relative_SharedMergedDiv.csv", header = TRUE, sep = ";", dec = ".", skip = 0, na.strings = "NA")
-rownames(rMergedDiv) <- rMergedDiv[, 1]
-rMergedDiv <- rMergedDiv[, -1]
-rMergedDiv <- as.data.frame(t(rMergedDiv))
-rMergedDiv <- rMergedDiv %>% 
-  mutate(Division = as.factor(c("Chlorophyta", 
-                                "Chlorophyta", 
-                                "Ochrophyta", 
-                                "Ochrophyta", 
-                                "Cryptophyta", 
-                                "Cryptophyta", 
-                                "Haptophyta",
-                                "Haptophyta", 
-                                "Katablepharidophyta", 
-                                "Katablepharidophyta", 
-                                "Rhodophyta")
-  )
-  )  %>% 
-  mutate(Color = c("#3FA03F", "#005F00", "#7A3F8C", "#3B004D", "#3F3F99", "#000052", "#D93F3F", "#AC0000", "#50BFBC", "#007572", "#FFD466")
+grouped <- read.csv2(file = "Data/Revisited/grouped_composite.csv", 
+                     header = TRUE, 
+                     sep = ";", 
+                     dec = ".", 
+                     skip = 0, 
+                     fill = TRUE)
+colnames(grouped)[1] <- "Phylum"
+grouped <- grouped %>% 
+  mutate(Color = c("#440154", "#9575A0", "#CABAC8", 
+                   "#20A387", "#83C6BA", "#E0F1E3", 
+                   "#FFBE17", "#F3D482", "#FCF5D5", 
+                   "#1C3B74", "#8192B0", "#C0C9D0", 
+                   "#F94144", "#F09598", "#FCE5DA", 
+                   "#95D840", "#BEE196", "#EDF7DE")
          )
-write.csv2(rMergedDiv, file = "C:/Users/Camilo/Dropbox/R/eAnalisis/rSharedMergedDiv.csv")
-bplt <- t(MergedDiv)
-bplt <- bplt[, -c(1:36)] #If colSums(bplt) = 1 for each col you can continue
 
-tiff("Relative_Abundance_PPE_Shared.tiff", width = 10, height = 8, units = 'in', res = 600)
-par(mar = c(5.1,4.1,4.1,2.1), oma = c(1,1,0,0))
-barplot(bplt, border = NA, ylab = "Relative Abundance", ylim = c(0,1), axes = TRUE, col = rMergedDiv$Color, las = 2, cex.names = 0.8, cex.axis = 0.9)
+tiff("Decomposed_Contribution_Distribution_PPE_ASV.tiff", width = 17, height = 15, units = 'in', res = 600)
+grp.comp <-treemap(grouped, 
+                   index = c("Phylum", "Intersection"), 
+                   vSize = "Abundance", 
+                   type = "color", 
+                   vColor = "Color"
+                   )
 dev.off()
-
-tiff("Relative_Abundance_PuntaChoros_Legend.tiff", width = 5, height = 7, units = 'in', res = 600)
-plot.new()
-par(mar = c(0,0,0,0), oma = c(0,0,0,0))
-legend("center", legend = colnames(MergedDiv), cex = 1.2, ncol = 1, fill = rMergedDiv$Color, x.intersp = 0.2, xjust = 0.2, yjust = 0.3, y.intersp = 1.1, bty = "n", adj = 0, text.width = 0.1, pt.cex = 0.1)
-dev.off()
-
-ShaTXs <- filter(xTXs, Seq %in% all_of(uSha$Seq))
-write.csv2(ShaTXs, "D:/Documents/GitHub/datasets/datasets/Data/eAnalisis/ShaTXs.csv")
-
